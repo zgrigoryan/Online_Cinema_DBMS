@@ -1,4 +1,3 @@
-# db + admin (e.g., Postgres + pgAdmin)
 services:
   db:
     image: postgres:15
