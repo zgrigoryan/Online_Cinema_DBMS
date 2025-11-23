@@ -58,8 +58,7 @@ public class ReviewService {
   }
 
   private void validateEligibility(Customer customer, Movie movie) {
-    List<Ticket> tickets = ticketRepository.findAll().stream()
-        .filter(ticket -> ticket.getReservation().getCustomer().getId().equals(customer.getId()))
+    List<Ticket> tickets = ticketRepository.findByReservation_Customer_Id(customer.getId()).stream()
         .filter(ticket -> ticket.getSession().getMovie().getId().equals(movie.getId()))
         .toList();
     boolean anyPast = tickets.stream().anyMatch(t -> t.getSession().getEndTime().isBefore(OffsetDateTime.now()));

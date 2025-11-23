@@ -11,4 +11,6 @@ public interface TicketRepository extends JpaRepository<Ticket, TicketId> {
   boolean existsBySessionAndSeat(Session session, Seat seat);
 
   List<Ticket> findBySession(Session session);
+
+  List<Ticket> findByReservation_Customer_Id(Long customerId);
 }
