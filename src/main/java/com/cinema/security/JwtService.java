@@ -17,7 +17,8 @@ public class JwtService {
   private final Key signingKey;
   private final long validityMinutes;
 
-  public JwtService(@Value("${security.jwt.secret:ZmFrZXNlY3JldGtleQ==}") String secret,
+  // Default secret is 256-bit base64 to satisfy HS256 requirements
+  public JwtService(@Value("${security.jwt.secret:QkFTRTY0REVGQVVMVEtFWTIzNDU2Nzg5MDEyMzQ1Njc4OTA=}") String secret,
                     @Value("${security.jwt.minutes:60}") long validityMinutes) {
     this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     this.validityMinutes = validityMinutes;

@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:15
+    platform: linux/arm64/v8
     container_name: cinema_db
     restart: always
     environment:
@@ -8,7 +9,7 @@ services:
       POSTGRES_PASSWORD: cinema123
       POSTGRES_DB: cinema_app
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
 
