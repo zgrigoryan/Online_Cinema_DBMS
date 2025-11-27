@@ -20,6 +20,8 @@ import com.cinema.repository.SessionRepository;
 import com.cinema.repository.TicketRepository;
 import java.time.OffsetDateTime;
 import java.util.List;
+
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,7 +59,7 @@ public class ReservationService {
   }
 
   @Transactional
-  public Reservation createReservation(Long customerId, Long sessionId, List<Long> seatIds, String promotionCode) {
+  public Reservation createReservation(@NonNull Long customerId, @NonNull Long sessionId, @NonNull List<Long> seatIds, String promotionCode) {
     Customer customer = customerRepository.findById(customerId)
         .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
     Session session = sessionRepository.findById(sessionId)
