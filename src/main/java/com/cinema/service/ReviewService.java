@@ -8,6 +8,7 @@ import com.cinema.repository.CustomerRepository;
 import com.cinema.repository.MovieRepository;
 import com.cinema.repository.ReviewRepository;
 import com.cinema.repository.TicketRepository;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -58,7 +59,8 @@ public class ReviewService {
     }
     Review saved = reviewRepository.save(review);
     Double avg = reviewRepository.averageRatingForMovie(movie);
-    movie.setAvgRating(avg != null ? avg : 0d);
+    BigDecimal avgRating = avg != null ? BigDecimal.valueOf(avg) : BigDecimal.ZERO;
+    movie.setAvgRating(avgRating);
     movieRepository.save(movie);
     return saved;
   }

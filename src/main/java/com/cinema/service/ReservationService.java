@@ -18,6 +18,8 @@ import com.cinema.repository.ReservationRepository;
 import com.cinema.repository.SeatRepository;
 import com.cinema.repository.SessionRepository;
 import com.cinema.repository.TicketRepository;
+
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -83,12 +85,12 @@ public class ReservationService {
       }
     });
 
-    double total = session.getBasePrice() * seats.size();
+    BigDecimal total = session.getBasePrice().multiply(BigDecimal.valueOf(seats.size()));
     Promotion promotion = null;
     if (promotionCode != null && !promotionCode.isBlank()) {
       promotion = promotionService.validatePromotion(promotionCode, total);
-      double discount = total * promotion.getDiscountPercent() / 100.0;
-      total = total - discount;
+      BigDecimal discount = total.multiply(promotion.getDiscountPercent()).divide(BigDecimal.valueOf(100));
+      total = total.subtract(discount);
       promotion.setTimesRedeemed(promotion.getTimesRedeemed() + 1);
       promotionRepository.save(promotion);
     }

@@ -55,7 +55,7 @@ public class SessionService {
     session.setHall(hall);
     session.setStartTime(start);
     session.setEndTime(end);
-    session.setBasePrice(basePrice);
+    session.setBasePrice(java.math.BigDecimal.valueOf(basePrice));
     session.setStatus(SessionStatus.SCHEDULED);
     session.setAvailableSeats(hall.getCapacity());
     return sessionRepository.save(session);

@@ -3,6 +3,8 @@ package com.cinema.web.controller;
 import com.cinema.domain.model.Promotion;
 import com.cinema.service.PromotionService;
 import com.cinema.repository.PromotionRepository;
+
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,7 +31,7 @@ public class PromotionController {
 
   @GetMapping("/validate/{code}")
   public ResponseEntity<Promotion> validate(@PathVariable String code) {
-    Promotion promo = promotionService.validatePromotion(code, 0);
+    Promotion promo = promotionService.validatePromotion(code, BigDecimal.ZERO);
     return ResponseEntity.ok(promo);
   }
 }

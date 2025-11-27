@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,8 +31,8 @@ public class Payment {
   @JoinColumn(name = "reservation_id", nullable = false)
   private Reservation reservation;
 
-  @Column(nullable = false)
-  private Double amount;
+  @Column(nullable = false, precision = 10, scale = 2)
+  private BigDecimal amount;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)

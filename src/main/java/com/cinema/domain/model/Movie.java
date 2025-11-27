@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import lombok.Getter;
@@ -35,8 +36,8 @@ public class Movie {
   @Column(nullable = false)
   private Boolean isActive = Boolean.TRUE;
 
-  @Column(nullable = false)
-  private Double avgRating = 0d;
+  @Column(nullable = false, precision = 3, scale = 2)
+  private BigDecimal avgRating = BigDecimal.ZERO;
 
   @Column(nullable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();

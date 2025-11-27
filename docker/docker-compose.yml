@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:15
+    image: postgres:15-alpine
     platform: linux/arm64/v8
     container_name: cinema_db
     restart: always
@@ -12,6 +12,19 @@ services:
       - "5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+
+  app:
+    build: ..
+    container_name: cinema_app
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/cinema_app
+      SPRING_DATASOURCE_USERNAME: cinema
+      SPRING_DATASOURCE_PASSWORD: cinema123
+      SECURITY_JWT_SECRET: QkFTRTY0REVGQVVMVEtFWTIzNDU2Nzg5MDEyMzQ1Njc4OTA=
+    ports:
+      - "8080:8080"
 
 volumes:
   db_data:

@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,8 +27,8 @@ public class Promotion {
   @Column(columnDefinition = "TEXT")
   private String description;
 
-  @Column(nullable = false)
-  private Double discountPercent;
+  @Column(nullable = false, precision = 5, scale = 2)
+  private BigDecimal discountPercent;
 
   @Column(nullable = false)
   private LocalDate validFrom;
@@ -38,8 +39,8 @@ public class Promotion {
   @Column(nullable = false)
   private Boolean active = Boolean.TRUE;
 
-  @Column(nullable = false)
-  private Double minAmount = 0d;
+  @Column(nullable = false, precision = 10, scale = 2)
+  private BigDecimal minAmount = BigDecimal.ZERO;
 
   private Integer usageLimit;
 

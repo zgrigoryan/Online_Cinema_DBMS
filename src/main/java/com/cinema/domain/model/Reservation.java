@@ -15,6 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,8 +44,8 @@ public class Reservation {
   @Column(nullable = false, length = 20)
   private ReservationStatus status = ReservationStatus.PENDING;
 
-  @Column(nullable = false)
-  private Double totalAmount = 0d;
+  @Column(nullable = false, precision = 10, scale = 2)
+  private BigDecimal totalAmount = BigDecimal.ZERO;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "promotion_id")

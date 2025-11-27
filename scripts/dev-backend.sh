@@ -23,3 +23,6 @@ SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL:-jdbc:postgresql://localhost:5433/
 SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:-cinema} \
 SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD:-cinema123} \
 ./mvnw spring-boot:run
+
+echo "To run everything in Docker instead (avoids host networking issues), use:"
+echo "  docker compose -f docker/docker-compose.yml up --build app"

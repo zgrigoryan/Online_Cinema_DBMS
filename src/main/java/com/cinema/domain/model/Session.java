@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -41,7 +42,7 @@ public class Session {
   private OffsetDateTime endTime;
 
   @Column(nullable = false)
-  private Double basePrice;
+  private BigDecimal basePrice;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
