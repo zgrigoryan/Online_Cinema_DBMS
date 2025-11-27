@@ -122,4 +122,28 @@ public class ReservationService {
     paymentRepository.save(payment);
     return saved;
   }
+
+  @Transactional
+  public Reservation cancelReservation(Long reservationId, Long customerId) {
+    if (reservationId == null) {
+      throw new IllegalArgumentException("Reservation ID cannot be null");
+    }
+    Reservation reservation = reservationRepository.findById(reservationId)
+        .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+    if (!reservation.getCustomer().getId().equals(customerId)) {
+      throw new IllegalStateException("Cannot cancel reservation of another user");
+    }
+    if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+      return reservation;
+    }
+    reservation.setStatus(ReservationStatus.CANCELLED);
+    reservation.getTickets().forEach(t -> t.setStatus(TicketStatus.CANCELLED));
+    sessionService.adjustAvailableSeats(reservation.getSession(), reservation.getTickets().size());
+    Payment payment = reservation.getPayment();
+    if (payment != null && payment.getStatus() == PaymentStatus.PAID) {
+      payment.setStatus(PaymentStatus.REFUNDED);
+      paymentRepository.save(payment);
+    }
+    return reservationRepository.save(reservation);
+  }
 }
