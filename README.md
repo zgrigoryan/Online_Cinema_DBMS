@@ -36,6 +36,12 @@ Spring Boot + Postgres + Flyway project for an online cinema DBMS.
   docker build -t online-cinema-app .
   ```
 
+## Frontend (React + Vite)
+- Location: `frontend/`
+- Install deps: `cd frontend && npm install`
+- Run dev server: `npm run dev` (proxies `/api` to `http://localhost:8080`)
+- Build: `npm run build`
+
 ## Notes
 - Flyway migrations live in `src/main/resources/db/migration`.
 - Test data seeds are in `V2__seed_data.sql`.
