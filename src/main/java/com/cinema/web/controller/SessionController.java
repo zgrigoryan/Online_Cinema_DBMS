@@ -4,15 +4,18 @@ import com.cinema.domain.model.Session;
 import com.cinema.repository.SessionRepository;
 import com.cinema.service.SessionService;
 import com.cinema.web.dto.session.SessionRequest;
+import com.cinema.web.dto.session.SeatAvailability;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -28,8 +31,8 @@ public class SessionController {
   }
 
   @GetMapping
-  public List<Session> list() {
-    return sessionRepository.findAll();
+  public List<Session> list(@RequestParam(value = "movieId", required = false) Long movieId) {
+    return sessionRepository.findByMovieIdNullable(movieId);
   }
 
   @PostMapping
@@ -41,7 +44,12 @@ public class SessionController {
   }
 
   @GetMapping("/{id}")
-  public Session get(@PathVariable Long id) {
-    return sessionRepository.findById(id).orElseThrow();
+  public Session get(@PathVariable @NonNull Long id) {
+    return sessionRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Session not found with id: " + id));
+  }
+
+  @GetMapping("/{id}/seats")
+  public List<SeatAvailability> seats(@PathVariable Long id) {
+    return sessionService.getSeatAvailability(id);
   }
 }

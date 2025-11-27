@@ -6,6 +6,9 @@ import com.cinema.web.dto.movie.MovieRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
+
+import jakarta.validation.constraints.NotNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,9 +32,8 @@ public class MovieController {
     return movieRepository.findAll();
   }
 
-  @GetMapping("/{id}")
-  public Movie get(@PathVariable Long id) {
-    return movieRepository.findById(id).orElseThrow();
+  public Movie get(@PathVariable @NotNull @NonNull Long id) {
+    return movieRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Movie not found with id: " + id));
   }
 
   @PostMapping

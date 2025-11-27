@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -31,8 +33,28 @@ public class ReservationController {
     if (person.getRole() != Role.CUSTOMER) {
       return ResponseEntity.status(403).build();
     }
+    Long personId = person.getId();
+    if (personId == null || request.getSessionId() == null || request.getSeatIds() == null || request.getSeatIds().isEmpty()) {
+      return ResponseEntity.badRequest().build();
+    }
+    Long sessionId = Objects.requireNonNull(request.getSessionId(), "Session ID cannot be null");
+    var seatIds = Objects.requireNonNull(request.getSeatIds(), "Seat IDs cannot be null");
     Reservation reservation = reservationService.createReservation(
-        person.getId(), request.getSessionId(), request.getSeatIds(), request.getPromotionCode());
+        Objects.requireNonNull(personId, "Person ID cannot be null"),
+        sessionId,
+        seatIds,
+        request.getPromotionCode());
+    return ResponseEntity.ok(reservation);
+  }
+
+  @PostMapping("/cancel/{id}")
+  @PreAuthorize("hasRole('CUSTOMER')")
+  public ResponseEntity<Reservation> cancel(@AuthenticationPrincipal Person person,
+                                            @PathVariable Long id) {
+    if (person.getRole() != Role.CUSTOMER) {
+      return ResponseEntity.status(403).build();
+    }
+    Reservation reservation = reservationService.cancelReservation(id, person.getId());
     return ResponseEntity.ok(reservation);
   }
 }
