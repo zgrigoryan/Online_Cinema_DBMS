@@ -33,8 +33,14 @@ public class ReviewService {
 
   @Transactional
   public Review addOrUpdateReview(Long customerId, Long movieId, int rating, String comment) {
+    if (customerId == null) {
+      throw new IllegalArgumentException("Customer ID must not be null");
+    }
     Customer customer = customerRepository.findById(customerId)
         .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+    if (movieId == null) {
+      throw new IllegalArgumentException("Movie ID must not be null");
+    }
     Movie movie = movieRepository.findById(movieId)
         .orElseThrow(() -> new IllegalArgumentException("Movie not found"));
 
