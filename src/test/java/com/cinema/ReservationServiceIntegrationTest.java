@@ -4,10 +4,13 @@ import com.cinema.domain.model.Reservation;
 import com.cinema.repository.PersonRepository;
 import com.cinema.service.ReservationService;
 import java.util.List;
+import java.util.Objects;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.lang.NonNull;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -20,8 +23,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 class ReservationServiceIntegrationTest {
 
+  @SuppressWarnings("resource")
   @Container
-  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
+  static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
       .withDatabaseName("cinema_app")
       .withUsername("cinema")
       .withPassword("cinema123");
@@ -41,7 +45,8 @@ class ReservationServiceIntegrationTest {
 
   @Test
   void createsReservationWithAvailableSeats() {
-    Reservation reservation = reservationService.createReservation(2L, 1L, List.of(3L), null);
+    List<Long> seats = Objects.requireNonNull(List.of(3L));
+    Reservation reservation = reservationService.createReservation(2L, 1L, seats, null);
     assert reservation.getId() != null;
   }
 }

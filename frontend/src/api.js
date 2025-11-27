@@ -28,12 +28,17 @@ export async function fetchMovies() {
 }
 
 export async function fetchSessionsByMovie(movieId) {
-  const { data } = await api.get('/sessions');
-  return data.filter((s) => s.movie && s.movie.id === Number(movieId));
+  const { data } = await api.get(`/sessions?movieId=${movieId}`);
+  return data;
 }
 
 export async function fetchSession(sessionId) {
   const { data } = await api.get(`/sessions/${sessionId}`);
+  return data;
+}
+
+export async function fetchSessionSeats(sessionId) {
+  const { data } = await api.get(`/sessions/${sessionId}/seats`);
   return data;
 }
 

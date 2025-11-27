@@ -22,7 +22,7 @@ export default function MoviesPage() {
             <h3>{m.title}</h3>
             <p>{m.description}</p>
             <p className="muted">{m.durationMinutes} min</p>
-            <Link className="btn" to={`/sessions/${m.id}`}>Sessions</Link>
+            <Link className="btn" to={`/movies/${m.id}/sessions`}>Sessions</Link>
           </div>
         ))}
       </div>

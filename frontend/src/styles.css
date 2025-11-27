@@ -72,3 +72,27 @@ input {
 .row {
   margin: 0.2rem 0;
 }
+
+.seat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.seat {
+  padding: 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f9fafb;
+  cursor: pointer;
+}
+.seat.selected {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+.seat.booked {
+  background: #e5e7eb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
