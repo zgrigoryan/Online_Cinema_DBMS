@@ -10,5 +10,6 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
   Optional<Promotion> findByCode(String code);
 
   @Query("SELECT p FROM Promotion p WHERE p.code = :code AND p.active = true AND p.validFrom <= :today AND p.validTo >= :today")
-  Optional<Promotion> findActiveByCode(String code, LocalDate today);
+  Optional<Promotion> findActiveByCode(@org.springframework.data.repository.query.Param("code") String code,
+                                       @org.springframework.data.repository.query.Param("today") LocalDate today);
 }

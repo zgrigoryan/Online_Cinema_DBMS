@@ -14,6 +14,9 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
 
   List<Session> findByMovie(Movie movie);
 
+  @Query("SELECT s FROM Session s WHERE (:movieId IS NULL OR s.movie.id = :movieId)")
+  List<Session> findByMovieIdNullable(@Param("movieId") Long movieId);
+
   @Query("SELECT s FROM Session s WHERE s.hall = :hall AND s.status IN :statuses "
       + "AND s.startTime < :endTime AND s.endTime > :startTime")
   List<Session> findOverlappingSessions(@Param("hall") CinemaHall hall,

@@ -13,4 +13,6 @@ public interface TicketRepository extends JpaRepository<Ticket, TicketId> {
   List<Ticket> findBySession(Session session);
 
   List<Ticket> findByReservation_Customer_Id(Long customerId);
+
+  List<Ticket> findBySession_Id(Long sessionId);
 }
