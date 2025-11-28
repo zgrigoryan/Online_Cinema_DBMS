@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import java.util.Objects;
 
@@ -56,5 +57,14 @@ public class ReservationController {
     }
     Reservation reservation = reservationService.cancelReservation(id, person.getId());
     return ResponseEntity.ok(reservation);
+  }
+
+  @GetMapping("/history")
+  @PreAuthorize("hasRole('CUSTOMER')")
+  public ResponseEntity<?> history(@AuthenticationPrincipal Person person) {
+    if (person.getRole() != Role.CUSTOMER) {
+      return ResponseEntity.status(403).build();
+    }
+    return ResponseEntity.ok(reservationService.getHistory(person.getId()));
   }
 }

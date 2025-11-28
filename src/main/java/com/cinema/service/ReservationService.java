@@ -150,4 +150,11 @@ public class ReservationService {
     }
     return reservationRepository.save(reservation);
   }
+
+  @Transactional(readOnly = true)
+  public List<Reservation> getHistory(Long customerId) {
+    Customer customer = customerRepository.findById(customerId)
+        .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+    return reservationRepository.findByCustomerOrderByReservedAtDesc(customer);
+  }
 }
