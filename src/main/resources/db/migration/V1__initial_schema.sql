@@ -101,11 +101,13 @@ CREATE TABLE reservation (
 
 CREATE TABLE ticket (
     reservation_id BIGINT NOT NULL,
+    ticket_number INTEGER NOT NULL,
     seat_id BIGINT NOT NULL REFERENCES seat (id),
     session_id BIGINT NOT NULL REFERENCES session (id),
     price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
     status VARCHAR(20) NOT NULL CHECK (status IN ('ACTIVE', 'CANCELLED', 'REFUNDED')),
-    PRIMARY KEY (reservation_id, seat_id),
+    PRIMARY KEY (reservation_id, ticket_number),
+    CONSTRAINT ticket_reservation_seat UNIQUE (reservation_id, seat_id),
     CONSTRAINT ticket_session_seat UNIQUE (session_id, seat_id),
     CONSTRAINT ticket_reservation_session_fk FOREIGN KEY (reservation_id, session_id) REFERENCES reservation (id, session_id) ON DELETE CASCADE
 );

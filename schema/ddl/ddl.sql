@@ -101,7 +101,6 @@ CREATE TABLE reservation (
     UNIQUE (id, session_id)
 );
 
--- Ticket as weak entity: composite PK (reservation_id, ticket_number)
 CREATE TABLE ticket (
     reservation_id BIGINT NOT NULL,
     ticket_number INTEGER NOT NULL,
