@@ -28,6 +28,9 @@ public class Ticket {
   private Reservation reservation;
 
   @Id
+  @Column(name = "ticket_number", nullable = false)
+  private Integer ticketNumber;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "seat_id", nullable = false)
   private Seat seat;

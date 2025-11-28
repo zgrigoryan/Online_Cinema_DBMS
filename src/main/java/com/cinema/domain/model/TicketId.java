@@ -11,18 +11,19 @@ import lombok.Setter;
 @NoArgsConstructor
 public class TicketId implements Serializable {
   private Long reservation;
-  private Long seat;
+  private Integer ticketNumber;
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     TicketId ticketId = (TicketId) o;
-    return Objects.equals(reservation, ticketId.reservation) && Objects.equals(seat, ticketId.seat);
+    return Objects.equals(reservation, ticketId.reservation)
+        && Objects.equals(ticketNumber, ticketId.ticketNumber);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(reservation, seat);
+    return Objects.hash(reservation, ticketNumber);
   }
 }
