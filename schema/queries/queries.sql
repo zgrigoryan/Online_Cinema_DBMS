@@ -62,6 +62,33 @@ JOIN movie m ON r.movie_id = m.id
 GROUP BY m.title
 ORDER BY avg_rating DESC;
 
+-- Revenue by movie
+SELECT m.title, SUM(p.amount) AS revenue
+FROM payment p
+JOIN reservation r ON p.reservation_id = r.id
+JOIN session s ON r.session_id = s.id
+JOIN movie m ON s.movie_id = m.id
+WHERE p.status = 'PAID'
+GROUP BY m.title
+ORDER BY revenue DESC;
+
+-- Top customers by spend
+SELECT c.person_id, p.email, SUM(pay.amount) AS total_spend, COUNT(pay.id) AS payments
+FROM payment pay
+JOIN reservation r ON pay.reservation_id = r.id
+JOIN customer c ON r.customer_id = c.person_id
+JOIN person p ON p.id = c.person_id
+WHERE pay.status = 'PAID'
+GROUP BY c.person_id, p.email
+ORDER BY total_spend DESC
+LIMIT 10;
+
+-- Promotion effectiveness
+SELECT promo.code, COUNT(r.id) AS reservations, SUM(r.total_amount) AS gross_after_discount
+FROM promotion promo
+LEFT JOIN reservation r ON promo.id = r.promotion_id
+GROUP BY promo.code;
+
 -- Sessions with potential overlaps (diagnostic)
 SELECT s1.id AS session_a,
        s2.id AS session_b,
