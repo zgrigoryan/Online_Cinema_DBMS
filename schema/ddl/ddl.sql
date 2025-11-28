@@ -33,6 +33,7 @@ CREATE TABLE movie (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
+    genre VARCHAR(100) NOT NULL DEFAULT 'Unknown',
     duration_minutes INTEGER NOT NULL CHECK (duration_minutes > 0),
     release_date DATE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,

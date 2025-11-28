@@ -63,17 +63,17 @@ DECLARE
   sess_id BIGINT;
   seat1 BIGINT;
   seat2 BIGINT;
-  base_price NUMERIC(10,2);
+  base_price_val NUMERIC(10,2);
   total NUMERIC(10,2);
   res_id BIGINT;
 BEGIN
   SELECT person_id INTO cust_id FROM customer c JOIN person p ON c.person_id = p.id WHERE p.email = 'demo.customer@example.com';
-  SELECT id, base_price INTO sess_id, base_price FROM session ORDER BY start_time LIMIT 1;
+  SELECT id, base_price INTO sess_id, base_price_val FROM session ORDER BY start_time LIMIT 1;
   SELECT id INTO seat1 FROM seat WHERE hall_id = (SELECT hall_id FROM session WHERE id = sess_id) ORDER BY id LIMIT 1;
   SELECT id INTO seat2 FROM seat WHERE hall_id = (SELECT hall_id FROM session WHERE id = sess_id) ORDER BY id OFFSET 1 LIMIT 1;
 
   IF cust_id IS NOT NULL AND sess_id IS NOT NULL AND seat1 IS NOT NULL AND seat2 IS NOT NULL THEN
-    total := base_price * 2;
+    total := base_price_val * 2;
     INSERT INTO reservation (customer_id, session_id, status, total_amount, promotion_id, reserved_at)
     VALUES (cust_id, sess_id, 'CONFIRMED', total, NULL, NOW())
     ON CONFLICT DO NOTHING;
@@ -81,10 +81,10 @@ BEGIN
     SELECT id INTO res_id FROM reservation WHERE customer_id = cust_id AND session_id = sess_id ORDER BY reserved_at DESC LIMIT 1;
 
     IF res_id IS NOT NULL THEN
-      INSERT INTO ticket (reservation_id, seat_id, session_id, price, status)
+      INSERT INTO ticket (reservation_id, ticket_number, seat_id, session_id, price, status)
       VALUES
-        (res_id, seat1, sess_id, base_price, 'ACTIVE'),
-        (res_id, seat2, sess_id, base_price, 'ACTIVE')
+        (res_id, 1, seat1, sess_id, base_price_val, 'ACTIVE'),
+        (res_id, 2, seat2, sess_id, base_price_val, 'ACTIVE')
       ON CONFLICT DO NOTHING;
 
       INSERT INTO payment (reservation_id, amount, status, method, paid_at)
