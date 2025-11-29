@@ -1,0 +1,26 @@
+name: Integration Tests (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: maven
+      - name: Enable Docker for Testcontainers
+        uses: docker/setup-buildx-action@v3
+      - name: Run integration tests (includes *IntegrationTest)
+        run: ./mvnw -B clean test -Dsurefire.excludes=
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-logs
+          path: target/surefire-reports
