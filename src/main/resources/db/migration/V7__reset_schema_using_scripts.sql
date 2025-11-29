@@ -1,10 +1,4 @@
 -- Reset schema using schema/ddl/ddl.sql and schema/dml/dml.sql
-DO $$
-BEGIN
-  EXECUTE 'DROP SCHEMA public CASCADE';
-  EXECUTE 'CREATE SCHEMA public';
-END$$;
-
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 DROP TABLE IF EXISTS makes CASCADE;
