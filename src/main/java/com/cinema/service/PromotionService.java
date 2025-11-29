@@ -3,7 +3,7 @@ package com.cinema.service;
 import com.cinema.domain.model.Promotion;
 import com.cinema.repository.PromotionRepository;
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,14 +16,8 @@ public class PromotionService {
   }
 
   public Promotion validatePromotion(String code, BigDecimal totalAmount) {
-    Promotion promotion = promotionRepository.findActiveByCode(code, LocalDate.now())
+    Promotion promotion = promotionRepository.findActiveByCode(code, LocalDateTime.now())
         .orElseThrow(() -> new IllegalArgumentException("Invalid or inactive promotion"));
-    if (promotion.getUsageLimit() != null && promotion.getTimesRedeemed() >= promotion.getUsageLimit()) {
-      throw new IllegalStateException("Promotion usage limit reached");
-    }
-    if (totalAmount.compareTo(promotion.getMinAmount()) < 0) {
-      throw new IllegalStateException("Total amount below promotion minimum");
-    }
     return promotion;
   }
 }

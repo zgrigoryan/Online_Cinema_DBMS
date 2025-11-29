@@ -9,7 +9,7 @@ import com.cinema.repository.MovieRepository;
 import com.cinema.repository.ReviewRepository;
 import com.cinema.repository.TicketRepository;
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,23 +53,20 @@ public class ReviewService {
     review.setMovie(movie);
     review.setRating(rating);
     review.setComment(comment);
-    review.setUpdatedAt(OffsetDateTime.now());
-    if (review.getCreatedAt() == null) {
-      review.setCreatedAt(OffsetDateTime.now());
-    }
+    review.setReviewDate(LocalDateTime.now());
     Review saved = reviewRepository.save(review);
     Double avg = reviewRepository.averageRatingForMovie(movie);
     BigDecimal avgRating = avg != null ? BigDecimal.valueOf(avg) : BigDecimal.ZERO;
-    movie.setAvgRating(avgRating);
+    movie.setMovieRating(avgRating);
     movieRepository.save(movie);
     return saved;
   }
 
   private void validateEligibility(Customer customer, Movie movie) {
     List<Ticket> tickets = ticketRepository.findByReservation_Customer_Id(customer.getId()).stream()
-        .filter(ticket -> ticket.getSession().getMovie().getId().equals(movie.getId()))
+        .filter(ticket -> ticket.getReservation().getSession().getMovie().getId().equals(movie.getId()))
         .toList();
-    boolean anyPast = tickets.stream().anyMatch(t -> t.getSession().getEndTime().isBefore(OffsetDateTime.now()));
+    boolean anyPast = tickets.stream().anyMatch(t -> t.getReservation().getSession().getEndTime().isBefore(LocalDateTime.now()));
     if (!anyPast) {
       throw new IllegalStateException("Customer must have attended a past session to review");
     }

@@ -1,6 +1,5 @@
 package com.cinema.service;
 
-import com.cinema.domain.enums.Role;
 import com.cinema.domain.model.Customer;
 import com.cinema.domain.model.Person;
 import com.cinema.repository.CustomerRepository;
@@ -44,7 +43,6 @@ public class AuthService {
     customer.setEmail(email);
     customer.setPhone(phone);
     customer.setPasswordHash(passwordEncoder.encode(password));
-    customer.setRole(Role.CUSTOMER);
     customerRepository.save(customer);
     return jwtService.generateToken(customer);
   }

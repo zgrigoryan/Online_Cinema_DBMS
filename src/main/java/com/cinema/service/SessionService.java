@@ -1,6 +1,5 @@
 package com.cinema.service;
 
-import com.cinema.domain.enums.SessionStatus;
 import com.cinema.domain.model.CinemaHall;
 import com.cinema.domain.model.Movie;
 import com.cinema.domain.model.Session;
@@ -9,7 +8,7 @@ import com.cinema.repository.MovieRepository;
 import com.cinema.repository.SessionRepository;
 import com.cinema.repository.SeatRepository;
 import com.cinema.repository.TicketRepository;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +35,7 @@ public class SessionService {
   }
 
   @Transactional
-  public Session scheduleSession(Long movieId, Long hallId, OffsetDateTime start, OffsetDateTime end, double basePrice) {
+  public Session scheduleSession(Long movieId, Long hallId, LocalDateTime start, LocalDateTime end, double sessionPrice) {
     if (movieId == null) {
       throw new IllegalArgumentException("Movie ID cannot be null");
     }
@@ -45,8 +44,7 @@ public class SessionService {
       throw new IllegalArgumentException("Hall ID cannot be null");
     }
     CinemaHall hall = hallRepository.findById(hallId).orElseThrow(() -> new IllegalArgumentException("Hall not found"));
-    List<Session> overlaps = sessionRepository.findOverlappingSessions(
-        hall, start, end, List.of(SessionStatus.SCHEDULED, SessionStatus.ACTIVE));
+    List<Session> overlaps = sessionRepository.findOverlappingSessions(hall, start, end);
     if (!overlaps.isEmpty()) {
       throw new IllegalStateException("Session overlaps with another session in the same hall");
     }
@@ -55,9 +53,9 @@ public class SessionService {
     session.setHall(hall);
     session.setStartTime(start);
     session.setEndTime(end);
-    session.setBasePrice(java.math.BigDecimal.valueOf(basePrice));
-    session.setStatus(SessionStatus.SCHEDULED);
+    session.setSessionPrice(java.math.BigDecimal.valueOf(sessionPrice));
     session.setAvailableSeats(hall.getCapacity());
+    session.setShowDate(start.toLocalDate());
     return sessionRepository.save(session);
   }
 
@@ -78,14 +76,17 @@ public class SessionService {
     }
     Session session = sessionRepository.findById(sessionId)
         .orElseThrow(() -> new IllegalArgumentException("Session not found"));
-    var tickets = ticketRepository.findBySession(session);
+    var tickets = ticketRepository.findByReservation_Session(session);
     var seats = seatRepository.findByHall(session.getHall());
     return seats.stream()
         .map(seat -> {
           boolean booked = tickets.stream().anyMatch(t -> t.getSeat().getId().equals(seat.getId())
-              && t.getStatus().name().equals("ACTIVE"));
+              );
           return new com.cinema.web.dto.session.SeatAvailability(
-              seat.getId(), seat.getLabel(), seat.getSeatRow(), seat.getSeatNumber(),
+              seat.getId(),
+              seat.getRowNumber() + "-" + seat.getSeatNumber(),
+              seat.getRowNumber(),
+              seat.getSeatNumber(),
               booked ? "BOOKED" : "AVAILABLE");
         })
         .toList();
