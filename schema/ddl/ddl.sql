@@ -27,7 +27,7 @@ CREATE TABLE person (
 );
 
 CREATE TABLE customer (
-    customer_id INT PRIMARY KEY REFERENCES person (person_id),
+    customer_id INT PRIMARY KEY REFERENCES person (person_id) ON DELETE CASCADE,
     membership_status VARCHAR(20) NOT NULL CHECK (membership_status IN ('REGULAR', 'SILVER', 'GOLD', 'PLATINUM')),
     registration_date TIMESTAMP NOT NULL
 );
@@ -41,7 +41,7 @@ CREATE TABLE employee (
 
 CREATE TABLE movie (
     movie_id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL UNIQUE,
+    title VARCHAR(255) NOT NULL,
     description TEXT,
     genre VARCHAR(100) NOT NULL DEFAULT 'Unknown',
     duration INTEGER NOT NULL CHECK (duration > 0),
@@ -77,8 +77,8 @@ CREATE TABLE promotion (
 
 CREATE TABLE session (
     session_id SERIAL PRIMARY KEY,
-    movie_id INT NOT NULL REFERENCES movie (movie_id),
-    hall_id INT NOT NULL REFERENCES cinema_hall (hall_id),
+    movie_id INT NOT NULL REFERENCES movie (movie_id) ON DELETE CASCADE,
+    hall_id INT NOT NULL REFERENCES cinema_hall (hall_id) ON DELETE CASCADE,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
     available_seats INTEGER NOT NULL CHECK (available_seats >= 0),
@@ -124,12 +124,12 @@ CREATE TABLE payment (
 
 CREATE TABLE reservation (
     reservation_id SERIAL PRIMARY KEY,
-    session_id INT NOT NULL REFERENCES session (session_id),
+    session_id INT NOT NULL REFERENCES session (session_id) ON DELETE CASCADE,
     payment_id INT REFERENCES payment (payment_id) ON DELETE RESTRICT, -- nullable: reservation may not be paid yet
     status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'CONFIRMED', 'CANCELLED')),
     total_amount NUMERIC(10, 2) NOT NULL CHECK (total_amount >= 0),
     reservation_date TIMESTAMP NOT NULL DEFAULT NOW(),
-    customer_id INT NOT NULL REFERENCES customer (customer_id),
+    customer_id INT NOT NULL REFERENCES customer (customer_id) ON DELETE CASCADE,
     UNIQUE(session_id, customer_id)
 );
 
@@ -180,8 +180,8 @@ EXECUTE FUNCTION enforce_ticket_seat_session();
 
 CREATE TABLE review (
     review_id SERIAL PRIMARY KEY,
-    customer_id INT NOT NULL REFERENCES customer (customer_id),
-    movie_id INT NOT NULL REFERENCES movie (movie_id),
+    customer_id INT NOT NULL REFERENCES customer (customer_id) ON DELETE CASCADE,
+    movie_id INT NOT NULL REFERENCES movie (movie_id) ON DELETE CASCADE,
     rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
     comment TEXT,
     review_date TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -189,8 +189,8 @@ CREATE TABLE review (
 );
 
 CREATE TABLE works_on (
-    person_id INT NOT NULL REFERENCES person (person_id),
-    movie_id INT NOT NULL REFERENCES movie (movie_id),
+    person_id INT NOT NULL REFERENCES person (person_id) ON DELETE CASCADE,
+    movie_id INT NOT NULL REFERENCES movie (movie_id) ON DELETE CASCADE,
     role VARCHAR(100) NOT NULL CHECK(role IN ('ACTOR', 'DIRECTOR', 'PRODUCER', 'WRITER', 'CINEMATOGRAPHER')),
     biography TEXT,
     PRIMARY KEY (person_id, movie_id, role)
@@ -203,15 +203,9 @@ CREATE TABLE monitors (
 );
 
 CREATE TABLE manages (
-    employee_id INT NOT NULL REFERENCES employee (employee_id),
-    hall_id INT NOT NULL REFERENCES cinema_hall (hall_id),
+    employee_id INT NOT NULL REFERENCES employee (employee_id) ON DELETE CASCADE,
+    hall_id INT NOT NULL REFERENCES cinema_hall (hall_id) ON DELETE CASCADE,
     PRIMARY KEY (employee_id, hall_id)
-);
-
-CREATE TABLE makes (
-    customer_id INT NOT NULL REFERENCES customer (customer_id),
-    reservation_id INT NOT NULL REFERENCES reservation (reservation_id),
-    PRIMARY KEY (customer_id, reservation_id)
 );
 
 CREATE INDEX idx_session_movie ON session (movie_id);
