@@ -1,118 +1,86 @@
--- Reporting and utility queries
-
--- Revenue by day
-SELECT DATE(p.paid_at) AS day, SUM(p.amount) AS revenue
-FROM payment p
-WHERE p.status = 'PAID'
-GROUP BY day
-ORDER BY day DESC;
-
--- Revenue by movie
-SELECT m.title, SUM(p.amount) AS revenue
-FROM payment p
-JOIN reservation r ON p.reservation_id = r.id
-JOIN session s ON r.session_id = s.id
-JOIN movie m ON s.movie_id = m.id
-WHERE p.status = 'PAID'
-GROUP BY m.title
-ORDER BY revenue DESC;
-
--- Occupancy by session
-SELECT s.id AS session_id,
-       m.title,
-       h.name AS hall,
-       h.capacity,
-       (h.capacity - s.available_seats) AS seats_sold,
-       ROUND(((h.capacity - s.available_seats)::numeric / h.capacity) * 100, 2) AS occupancy_pct
+-- 13. Hall Utilization and Occupancy Analysis
+-- Seats sold vs hall capacity per session.
+SELECT
+    s.session_id,
+    s.show_date,
+    s.start_time,
+    m.title AS movie_title,
+    ch.name AS hall_name,
+    ch.capacity,
+    COUNT(t.ticket_number) AS tickets_sold,
+    COALESCE(SUM(t.ticket_price), 0) AS ticket_revenue,
+    ROUND(COUNT(t.ticket_number)::NUMERIC * 100 / NULLIF(ch.capacity, 0), 2) AS occupancy_percent
 FROM session s
-JOIN movie m ON s.movie_id = m.id
-JOIN cinema_hall h ON s.hall_id = h.id
-ORDER BY s.start_time DESC;
+JOIN cinema_hall ch ON ch.hall_id = s.hall_id
+JOIN movie m ON m.movie_id = s.movie_id
+LEFT JOIN reservation r ON r.session_id = s.session_id
+LEFT JOIN ticket t ON t.reservation_id = r.reservation_id
+GROUP BY s.session_id, s.show_date, s.start_time, m.title, ch.name, ch.capacity
+ORDER BY s.show_date, s.start_time, s.session_id;
 
--- Top customers by spend
-SELECT c.person_id,
-       p.email,
-       SUM(pay.amount) AS total_spend,
-       COUNT(pay.id) AS payments
-FROM payment pay
-JOIN reservation r ON pay.reservation_id = r.id
-JOIN customer c ON r.customer_id = c.person_id
-JOIN person p ON p.id = c.person_id
-WHERE pay.status = 'PAID'
-GROUP BY c.person_id, p.email
-ORDER BY total_spend DESC
-LIMIT 10;
+-- 14. Revenue Report by Date and Payment Method
+-- Summarize payments per day and payment method.
+SELECT
+    payment_date::DATE AS payment_day,
+    payment_method,
+    SUM(final_amount) AS total_revenue,
+    COUNT(*) AS payment_count
+FROM payment
+GROUP BY payment_day, payment_method
+ORDER BY payment_day, payment_method;
 
--- Promotion effectiveness (usage and revenue impact)
-SELECT promo.code,
-       promo.description,
-       COUNT(r.id) AS reservations,
-       SUM(r.total_amount) AS gross_after_discount,
-       promo.times_redeemed,
-       promo.usage_limit
+-- 15. Revenue per Movie
+-- Total reservation revenue per movie (confirmed + paid reservations).
+SELECT
+    m.movie_id,
+    m.title AS movie_title,
+    SUM(r.total_amount) AS total_revenue,
+    COUNT(DISTINCT r.reservation_id) AS reservations_count
+FROM movie m
+JOIN session s ON s.movie_id = m.movie_id
+JOIN reservation r ON r.session_id = s.session_id
+LEFT JOIN payment p ON p.payment_id = r.payment_id
+WHERE r.status = 'CONFIRMED'
+GROUP BY m.movie_id, m.title
+ORDER BY total_revenue DESC, m.title;
+
+-- 16. Top Customer Ranking
+-- Rank customers by spend and confirmed reservation count.
+SELECT
+    c.customer_id,
+    CONCAT(p.first_name, ' ', p.last_name) AS customer_name,
+    SUM(r.total_amount) AS total_spent,
+    COUNT(*) AS confirmed_reservations
+FROM customer c
+JOIN person p ON p.person_id = c.customer_id
+JOIN reservation r ON r.customer_id = c.customer_id
+LEFT JOIN payment pay ON pay.payment_id = r.payment_id
+WHERE r.status = 'CONFIRMED'
+GROUP BY c.customer_id, p.first_name, p.last_name
+ORDER BY total_spent DESC, confirmed_reservations DESC, customer_name;
+
+-- 17. Promotion Usage and Effectiveness
+-- How often promotions were used and the revenue linked to them.
+SELECT
+    promo.promotion_id,
+    promo.code,
+    COUNT(pay.payment_id) AS times_used,
+    COALESCE(SUM(pay.final_amount), 0) AS revenue_with_promo
 FROM promotion promo
-LEFT JOIN reservation r ON promo.id = r.promotion_id
-GROUP BY promo.id, promo.code, promo.description, promo.times_redeemed, promo.usage_limit
-ORDER BY reservations DESC;
+LEFT JOIN payment pay ON pay.promotion_id = promo.promotion_id
+GROUP BY promo.promotion_id, promo.code
+ORDER BY times_used DESC, promo.code;
 
--- Average rating per movie
-SELECT m.title, ROUND(AVG(r.rating)::numeric, 2) AS avg_rating, COUNT(r.id) AS review_count
-FROM review r
-JOIN movie m ON r.movie_id = m.id
-GROUP BY m.title
-ORDER BY avg_rating DESC;
-
--- Revenue by movie
-SELECT m.title, SUM(p.amount) AS revenue
-FROM payment p
-JOIN reservation r ON p.reservation_id = r.id
-JOIN session s ON r.session_id = s.id
-JOIN movie m ON s.movie_id = m.id
-WHERE p.status = 'PAID'
-GROUP BY m.title
-ORDER BY revenue DESC;
-
--- Top customers by spend
-SELECT c.person_id, p.email, SUM(pay.amount) AS total_spend, COUNT(pay.id) AS payments
-FROM payment pay
-JOIN reservation r ON pay.reservation_id = r.id
-JOIN customer c ON r.customer_id = c.person_id
-JOIN person p ON p.id = c.person_id
-WHERE pay.status = 'PAID'
-GROUP BY c.person_id, p.email
-ORDER BY total_spend DESC
-LIMIT 10;
-
--- Promotion effectiveness
-SELECT promo.code, COUNT(r.id) AS reservations, SUM(r.total_amount) AS gross_after_discount
-FROM promotion promo
-LEFT JOIN reservation r ON promo.id = r.promotion_id
-GROUP BY promo.code;
-
--- Sessions with potential overlaps (diagnostic)
-SELECT s1.id AS session_a,
-       s2.id AS session_b,
-       h.name AS hall,
-       s1.start_time AS a_start,
-       s1.end_time AS a_end,
-       s2.start_time AS b_start,
-       s2.end_time AS b_end
-FROM session s1
-JOIN session s2 ON s1.hall_id = s2.hall_id
-JOIN cinema_hall h ON h.id = s1.hall_id
-WHERE s1.id < s2.id
-  AND s1.start_time < s2.end_time
-  AND s1.end_time > s2.start_time
-ORDER BY h.name;
-
--- Seat availability map for a session
-SELECT seat.id,
-       seat.label,
-       seat.seat_row,
-       seat.seat_number,
-       CASE WHEN t.seat_id IS NULL THEN 'AVAILABLE' ELSE 'BOOKED' END AS status
-FROM seat
-JOIN session s ON seat.hall_id = s.hall_id
-LEFT JOIN ticket t ON t.session_id = s.id AND t.seat_id = seat.id
-WHERE s.id = :sessionId
-ORDER BY seat.seat_row, seat.seat_number;
+-- 18. Employee Workload Overview
+-- Sessions monitored per employee per day.
+SELECT
+    e.employee_id,
+    CONCAT(per.first_name, ' ', per.last_name) AS employee_name,
+    s.show_date,
+    COUNT(mn.session_id) AS sessions_monitored
+FROM employee e
+JOIN person per ON per.person_id = e.employee_id
+LEFT JOIN monitors mn ON mn.employee_id = e.employee_id
+LEFT JOIN session s ON s.session_id = mn.session_id
+GROUP BY e.employee_id, per.first_name, per.last_name, s.show_date
+ORDER BY s.show_date NULLS LAST, sessions_monitored DESC, employee_name;
