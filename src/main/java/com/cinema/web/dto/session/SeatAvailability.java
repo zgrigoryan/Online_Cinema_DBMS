@@ -13,4 +13,5 @@ public class SeatAvailability {
   private Integer row;
   private Integer number;
   private String status;
+  private java.math.BigDecimal price;
 }

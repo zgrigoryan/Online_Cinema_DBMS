@@ -1,10 +1,12 @@
 package com.cinema.web.controller;
 
 import com.cinema.domain.enums.Role;
+import com.cinema.domain.enums.PaymentMethod;
 import com.cinema.domain.model.Person;
 import com.cinema.domain.model.Reservation;
 import com.cinema.service.ReservationService;
 import com.cinema.web.dto.reservation.ReservationRequest;
+import com.cinema.web.dto.reservation.PurchaseRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -59,12 +61,25 @@ public class ReservationController {
     return ResponseEntity.ok(reservation);
   }
 
+  @PostMapping("/{id}/purchase")
+  @PreAuthorize("hasRole('CUSTOMER')")
+  public ResponseEntity<Reservation> purchase(@AuthenticationPrincipal Person person,
+                                              @PathVariable Long id,
+                                              @Valid @RequestBody PurchaseRequest request) {
+    if (person.getRole() != Role.CUSTOMER) {
+      return ResponseEntity.status(403).build();
+    }
+    PaymentMethod method = request.getPaymentMethod() != null ? request.getPaymentMethod() : PaymentMethod.CREDIT_CARD;
+    Reservation reservation = reservationService.purchaseReservation(id, method, request.getPromotionCode());
+    return ResponseEntity.ok(reservation);
+  }
+
   @GetMapping("/history")
   @PreAuthorize("hasRole('CUSTOMER')")
   public ResponseEntity<?> history(@AuthenticationPrincipal Person person) {
     if (person.getRole() != Role.CUSTOMER) {
       return ResponseEntity.status(403).build();
     }
-    return ResponseEntity.ok(reservationService.getHistory(person.getId()));
+    return ResponseEntity.ok(reservationService.getHistoryDetailed(person.getId()));
   }
 }

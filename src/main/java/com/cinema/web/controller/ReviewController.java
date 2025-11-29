@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,5 +36,16 @@ public class ReviewController {
     Review review = reviewService.addOrUpdateReview(person.getId(), request.getMovieId(),
         request.getRating(), request.getComment());
     return ResponseEntity.ok(review);
+  }
+
+  @DeleteMapping("/{id}")
+  @PreAuthorize("hasRole('CUSTOMER')")
+  public ResponseEntity<Void> delete(@AuthenticationPrincipal Person person,
+                                     @PathVariable Long id) {
+    if (person.getRole() != Role.CUSTOMER) {
+      return ResponseEntity.status(403).build();
+    }
+    reviewService.deleteReview(id, person.getId());
+    return ResponseEntity.noContent().build();
   }
 }

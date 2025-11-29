@@ -78,3 +78,30 @@ SPRING_DATASOURCE_PASSWORD=cinema123 \
 - Flyway migrations live in `src/main/resources/db/migration`.
 - Test data seeds are in `V2__seed_data.sql`.
 - REST entrypoints start under `/api/*` with JWT auth. Use `/api/auth/register` or `/api/auth/login` to obtain a token.
+
+
+#### repo
+- TicketRepository.java findByReservation_Session_Id, findByReservation_Customer_Id, findByReservation_Session, existsByReservation_SessionAndSeat
+- SessionRepository.java findByMovie, findByMovieIdNullable, findOverlappingSessions 
+- SeatRepository.java findByHall
+- ReviewRepository.java findByCustomerAndMovie, averageRatingForMovie
+- ReservationRepository.java existsByCustomer, findByCustomerOrderByReservationDateDesc
+- PromotionRepository.java findActiveByCode
+- PersonRepository.java findByEmail
+- PaymentRepository.java revenueByDay, revenueByMovie, revenueBySession
+
+#### CONTROLLER LAYER and funcitonality mapping 
+1.  Customer sign-in is handled via `/api/auth/register` in `src\main\java\com\cinema\web\controller\AuthController.java` which delefates to `AuthService.refisterCustomer(...)` in `src\main\java\com\cinema\service\AuthService.java` (1.1 Specifies customer can update their info, not yet implemented)
+2.   Browsing Movies and Sessions: Movies list: `src/main/java/com/cinema/web/controller/MovieController.java` → `GET /api/movies` returns all `Movie` records with their fields (title, genre, durationMinutes, description, movieRating, etc.). There’s no “currently available” filter yet.
+Sessions per movie: `src/main/java/com/cinema/web/controller/SessionController.java` → `GET /api/sessions?movieId=...` uses `SessionRepository.findByMovieIdNullable` `(src/main/java/com/cinema/repository/SessionRepository.java)` to list sessions for a given movie (or all if no param).
+3. Viewing seat map and availability: Implemented seat `map/availability` endpoint: `src/main/java/com/cinema/web/controller/SessionController.java` → `GET /api/sessions/{id}/seats` delegates to `SessionService.getSeatAvailability(...)`.
+Logic for availability: `src/main/java/com/cinema/service/SessionService.java` fetches tickets for the session and seats for the hall; marks each seat as `BOOKED` if any ticket exists for that seat, otherwise `AVAILABLE`. It builds `SeatAvailability` DTOs (`src/main/java/com/cinema/web/dto/session/SeatAvailability.java`), using a r`owNumber-seatNumber` label and returning row/number/status.
+4. Creating reservations and purchasing tickets: Main flow is in `src/main/java/com/cinema/web/controller/ReservationController.java` and implemented in `src/main/java/com/cinema/service/ReservationService.java` (method `createReservation`):
+5. Reservation and ticket cancellation: `POST /api/reservations/cancel/{id}` (`ReservationController` → `ReservationService.cancelReservation`):
+   - Confirms caller owns the reservation, sets `Reservation.status` to `CANCELLED`, increments `Session.available_seats`. Tickets aren’t separately marked; refunds/negative payments are not created yet.
+6. Viewing purchase history: `GET /api/reservations/history` (`ReservationController` → `ReservationService.getHistory` → `ReservationRepository.findByCustomerOrderByReservationDateDesc`):
+   - Returns reservations for the authenticated customer; ticket/hall/movie/promotion details are not currently expanded.
+7. Writing reviews: `POST /api/reviews` (`ReviewController` → `ReviewService.addOrUpdateReview`):
+   - Ensures the customer attended a past session for the movie (checks tickets by customer/movie/endTime).
+   - Upserts a `Review` (rating/comment/review_date) and recalculates `Movie.movie_rating`. Delete/window restrictions are not implemented; only upsert is supported.
+

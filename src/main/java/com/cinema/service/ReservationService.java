@@ -1,7 +1,7 @@
 package com.cinema.service;
 
-import com.cinema.domain.enums.ReservationStatus;
 import com.cinema.domain.enums.PaymentMethod;
+import com.cinema.domain.enums.ReservationStatus;
 import com.cinema.domain.model.Customer;
 import com.cinema.domain.model.Payment;
 import com.cinema.domain.model.Promotion;
@@ -18,6 +18,7 @@ import com.cinema.repository.TicketRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.lang.NonNull;
@@ -76,43 +77,33 @@ public class ReservationService {
       }
     });
 
-    BigDecimal total = session.getSessionPrice().multiply(BigDecimal.valueOf(seats.size()));
-    Promotion promotion = null;
-    if (promotionCode != null && !promotionCode.isBlank()) {
-      promotion = promotionService.validatePromotion(promotionCode, total);
-      total = total.subtract(promotion.getDiscountAmount());
-      if (total.compareTo(BigDecimal.ZERO) < 0) {
-        total = BigDecimal.ZERO;
-      }
-    }
+    List<Seat> sortedSeats = seats.stream()
+        .sorted(Comparator.comparing(Seat::getRowNumber).thenComparing(Seat::getSeatNumber))
+        .toList();
+
+    BigDecimal total = BigDecimal.ZERO;
 
     Reservation reservation = new Reservation();
     reservation.setCustomer(customer);
     reservation.setSession(session);
-    reservation.setStatus(ReservationStatus.CONFIRMED);
+    reservation.setStatus(ReservationStatus.PENDING);
     reservation.setReservationDate(LocalDateTime.now());
     reservation.setTotalAmount(total);
 
     int ticketNumber = 1;
-    for (Seat seat : seats) {
+    for (Seat seat : sortedSeats) {
+      BigDecimal ticketPrice = priceForSeat(session, seat);
+      total = total.add(ticketPrice);
       Ticket ticket = new Ticket();
       ticket.setReservation(reservation);
       ticket.setTicketNumber(ticketNumber++);
       ticket.setSeat(seat);
-      ticket.setTicketPrice(session.getSessionPrice());
+      ticket.setTicketPrice(ticketPrice);
       ticket.setPurchaseDate(LocalDateTime.now());
       reservation.getTickets().add(ticket);
     }
-    sessionService.adjustAvailableSeats(session, -seats.size());
-
-    Payment payment = new Payment();
-    payment.setPromotion(promotion);
-    payment.setFinalAmount(total);
-    payment.setPaymentMethod(PaymentMethod.CREDIT_CARD);
-    payment.setPaymentDate(LocalDateTime.now());
-    Payment savedPayment = paymentRepository.save(payment);
-
-    reservation.setPayment(savedPayment);
+    reservation.setTotalAmount(total);
+    sessionService.adjustAvailableSeats(session, -sortedSeats.size());
 
     return reservationRepository.save(reservation);
   }
@@ -127,11 +118,21 @@ public class ReservationService {
     if (!reservation.getCustomer().getId().equals(customerId)) {
       throw new IllegalStateException("Cannot cancel reservation of another user");
     }
+    if (reservation.getSession().getStartTime().isBefore(LocalDateTime.now())) {
+      throw new IllegalStateException("Cannot cancel after session start");
+    }
     if (reservation.getStatus() == ReservationStatus.CANCELLED) {
       return reservation;
     }
     reservation.setStatus(ReservationStatus.CANCELLED);
-    sessionService.adjustAvailableSeats(reservation.getSession(), reservation.getTickets().size());
+    int ticketCount = reservation.getTickets().size();
+    reservation.getTickets().clear();
+    sessionService.adjustAvailableSeats(reservation.getSession(), ticketCount);
+    Payment payment = reservation.getPayment();
+    if (payment != null) {
+      payment.setFinalAmount(BigDecimal.ZERO);
+      paymentRepository.save(payment);
+    }
     return reservationRepository.save(reservation);
   }
 
@@ -140,5 +141,77 @@ public class ReservationService {
     Customer customer = customerRepository.findById(customerId)
         .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
     return reservationRepository.findByCustomerOrderByReservationDateDesc(customer);
+  }
+
+  @Transactional(readOnly = true)
+  public List<com.cinema.web.dto.reservation.ReservationHistoryResponse> getHistoryDetailed(Long customerId) {
+    return getHistory(customerId).stream().map(res -> {
+      Session s = res.getSession();
+      var tickets = res.getTickets().stream()
+          .map(t -> new com.cinema.web.dto.reservation.ReservationHistoryResponse.TicketInfo(
+              t.getSeat().getRowNumber(),
+              t.getSeat().getSeatNumber(),
+              t.getSeat().getCategory(),
+              t.getTicketPrice()))
+          .toList();
+      return new com.cinema.web.dto.reservation.ReservationHistoryResponse(
+          res.getId(),
+          res.getStatus().name(),
+          res.getReservationDate(),
+          res.getTotalAmount(),
+          s.getId(),
+          s.getShowDate(),
+          s.getStartTime().toLocalTime(),
+          s.getEndTime().toLocalTime(),
+          s.getMovie().getTitle(),
+          s.getHall().getName(),
+          res.getPayment() != null && res.getPayment().getPromotion() != null ? res.getPayment().getPromotion().getCode() : null,
+          res.getPayment() != null ? res.getPayment().getId() : null,
+          tickets
+      );
+    }).toList();
+  }
+
+  @Transactional
+  public Reservation purchaseReservation(Long reservationId, PaymentMethod method, String promotionCode) {
+    Reservation reservation = reservationRepository.findById(reservationId)
+        .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+    if (reservation.getStatus() != ReservationStatus.PENDING) {
+      throw new IllegalStateException("Only pending reservations can be purchased");
+    }
+    Session session = reservation.getSession();
+    if (session.getStartTime().isBefore(LocalDateTime.now())) {
+      throw new IllegalStateException("Cannot purchase past session");
+    }
+    BigDecimal total = reservation.getTickets().stream()
+        .map(Ticket::getTicketPrice)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    Promotion promotion = null;
+    if (promotionCode != null && !promotionCode.isBlank()) {
+      promotion = promotionService.validatePromotion(promotionCode, total);
+      total = total.subtract(promotion.getDiscountAmount());
+      if (total.compareTo(BigDecimal.ZERO) < 0) {
+        total = BigDecimal.ZERO;
+      }
+    }
+    Payment payment = new Payment();
+    payment.setPromotion(promotion);
+    payment.setFinalAmount(total);
+    payment.setPaymentMethod(method);
+    payment.setPaymentDate(LocalDateTime.now());
+    Payment savedPayment = paymentRepository.save(payment);
+
+    reservation.setPayment(savedPayment);
+    reservation.setTotalAmount(total);
+    reservation.setStatus(ReservationStatus.CONFIRMED);
+    return reservationRepository.save(reservation);
+  }
+
+  private BigDecimal priceForSeat(Session session, Seat seat) {
+    BigDecimal base = seat.getBasePrice() != null ? seat.getBasePrice() : BigDecimal.ZERO;
+    BigDecimal multiplier = SessionService.CATEGORY_MULTIPLIER.getOrDefault(
+        seat.getCategory() != null ? seat.getCategory().toUpperCase() : "STANDARD",
+        BigDecimal.ONE);
+    return session.getSessionPrice().multiply(multiplier).add(base);
   }
 }

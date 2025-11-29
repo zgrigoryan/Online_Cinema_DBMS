@@ -8,7 +8,9 @@ import com.cinema.repository.MovieRepository;
 import com.cinema.repository.SessionRepository;
 import com.cinema.repository.SeatRepository;
 import com.cinema.repository.TicketRepository;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,10 @@ public class SessionService {
   private final CinemaHallRepository hallRepository;
   private final SeatRepository seatRepository;
   private final TicketRepository ticketRepository;
+  public static final Map<String, BigDecimal> CATEGORY_MULTIPLIER = Map.of(
+      "VIP", BigDecimal.valueOf(1.2),
+      "STANDARD", BigDecimal.ONE
+  );
 
   public SessionService(SessionRepository sessionRepository,
                         MovieRepository movieRepository,
@@ -82,12 +88,18 @@ public class SessionService {
         .map(seat -> {
           boolean booked = tickets.stream().anyMatch(t -> t.getSeat().getId().equals(seat.getId())
               );
+          BigDecimal base = seat.getBasePrice() != null ? seat.getBasePrice() : BigDecimal.ZERO;
+          BigDecimal multiplier = CATEGORY_MULTIPLIER.getOrDefault(
+              seat.getCategory() != null ? seat.getCategory().toUpperCase() : "STANDARD",
+              BigDecimal.ONE);
+          BigDecimal price = session.getSessionPrice().multiply(multiplier).add(base);
           return new com.cinema.web.dto.session.SeatAvailability(
               seat.getId(),
               seat.getRowNumber() + "-" + seat.getSeatNumber(),
               seat.getRowNumber(),
               seat.getSeatNumber(),
-              booked ? "BOOKED" : "AVAILABLE");
+              booked ? "BOOKED" : "AVAILABLE",
+              price);
         })
         .toList();
   }

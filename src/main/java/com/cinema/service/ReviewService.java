@@ -71,4 +71,14 @@ public class ReviewService {
       throw new IllegalStateException("Customer must have attended a past session to review");
     }
   }
+
+  @Transactional
+  public void deleteReview(Long reviewId, Long customerId) {
+    Review review = reviewRepository.findById(reviewId)
+        .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+    if (!review.getCustomer().getId().equals(customerId)) {
+      throw new IllegalStateException("Cannot delete another user's review");
+    }
+    reviewRepository.delete(review);
+  }
 }
