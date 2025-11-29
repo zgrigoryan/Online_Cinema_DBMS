@@ -74,6 +74,12 @@ SPRING_DATASOURCE_PASSWORD=cinema123 \
 - Promotions: `GET /api/promotions`, `GET /api/promotions/validate/{code}`
 - Reports: `GET /api/reports/revenue/daily`, `GET /api/reports/occupancy`
 - Revenue (custom period): `GET /api/reports/revenue/period?start=...&end=...[&paymentMethod=...&promoOnly=true|false]`
+- Revenue by movie/session: `GET /api/reports/revenue/movie`, `GET /api/reports/revenue/session`
+- Top customers: `GET /api/reports/customers/top`
+- Promotion effectiveness: `GET /api/reports/promotions/effectiveness`
+- Movie performance (revenue + ratings): `GET /api/reports/movies/performance`
+- Employee workload: `GET /api/reports/employees/workload`
+- Cancellations: `GET /api/reports/cancellations`
 
 ## Notes
 - Flyway migrations live in `src/main/resources/db/migration`.
