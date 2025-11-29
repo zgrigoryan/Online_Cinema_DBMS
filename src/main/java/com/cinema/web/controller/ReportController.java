@@ -4,6 +4,7 @@ import com.cinema.domain.model.CinemaHall;
 import com.cinema.domain.model.Session;
 import com.cinema.domain.enums.PaymentMethod;
 import com.cinema.repository.PaymentRepository;
+import com.cinema.repository.ReservationRepository;
 import com.cinema.repository.SessionRepository;
 import com.cinema.web.dto.report.OccupancyRow;
 import com.cinema.web.dto.report.RevenueRow;
@@ -29,11 +30,14 @@ public class ReportController {
 
   private final PaymentRepository paymentRepository;
   private final SessionRepository sessionRepository;
+  private final ReservationRepository reservationRepository;
 
   public ReportController(PaymentRepository paymentRepository,
-                          SessionRepository sessionRepository) {
+                          SessionRepository sessionRepository, 
+                          ReservationRepository reservationRepository) {
     this.paymentRepository = paymentRepository;
     this.sessionRepository = sessionRepository;
+    this.reservationRepository = reservationRepository;
   }
   @GetMapping("/revenue/daily")
   public ResponseEntity<List<RevenueRow>> revenueDaily() {
