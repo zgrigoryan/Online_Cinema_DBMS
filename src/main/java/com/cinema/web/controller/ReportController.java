@@ -2,15 +2,19 @@ package com.cinema.web.controller;
 
 import com.cinema.domain.model.CinemaHall;
 import com.cinema.domain.model.Session;
+import com.cinema.domain.enums.PaymentMethod;
 import com.cinema.repository.PaymentRepository;
 import com.cinema.repository.SessionRepository;
 import com.cinema.web.dto.report.OccupancyRow;
 import com.cinema.web.dto.report.RevenueRow;
+import com.cinema.web.dto.report.RevenuePeriodRow;
 import java.util.List;
+import java.time.LocalDateTime;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -28,6 +32,15 @@ public class ReportController {
   public ResponseEntity<List<RevenueRow>> revenueDaily() {
     List<RevenueRow> rows = paymentRepository.revenueByDay();
     return ResponseEntity.ok(rows);
+  }
+
+  @GetMapping("/revenue/period")
+  public ResponseEntity<List<RevenuePeriodRow>> revenueByPeriod(
+      @RequestParam(required = false) LocalDateTime start,
+      @RequestParam(required = false) LocalDateTime end,
+      @RequestParam(required = false) PaymentMethod paymentMethod,
+      @RequestParam(defaultValue = "false") boolean promoOnly) {
+    return ResponseEntity.ok(paymentRepository.revenueByPeriod(start, end, paymentMethod, promoOnly));
   }
 
   @GetMapping("/occupancy")

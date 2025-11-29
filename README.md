@@ -73,6 +73,7 @@ SPRING_DATASOURCE_PASSWORD=cinema123 \
 - Reviews: `POST /api/reviews` (customer JWT)
 - Promotions: `GET /api/promotions`, `GET /api/promotions/validate/{code}`
 - Reports: `GET /api/reports/revenue/daily`, `GET /api/reports/occupancy`
+- Revenue (custom period): `GET /api/reports/revenue/period?start=...&end=...[&paymentMethod=...&promoOnly=true|false]`
 
 ## Notes
 - Flyway migrations live in `src/main/resources/db/migration`.
@@ -91,7 +92,7 @@ SPRING_DATASOURCE_PASSWORD=cinema123 \
 - PaymentRepository.java revenueByDay, revenueByMovie, revenueBySession
 
 #### CONTROLLER LAYER and funcitonality mapping 
-1.  Customer sign-in is handled via `/api/auth/register` in `src\main\java\com\cinema\web\controller\AuthController.java` which delefates to `AuthService.refisterCustomer(...)` in `src\main\java\com\cinema\service\AuthService.java` (1.1 Specifies customer can update their info, not yet implemented)
+1.  Customer sign-in is handled via `/api/auth/register` in `src\main\java\com\cinema\web\controller\AuthController.java` which delefates to `AuthService.refisterCustomer(...)` in `src\main\java\com\cinema\service\AuthService.java` (profile update via `PUT /api/customers/me` in `CustomerController`)
 2.   Browsing Movies and Sessions: Movies list: `src/main/java/com/cinema/web/controller/MovieController.java` → `GET /api/movies` returns all `Movie` records with their fields (title, genre, durationMinutes, description, movieRating, etc.). There’s no “currently available” filter yet.
 Sessions per movie: `src/main/java/com/cinema/web/controller/SessionController.java` → `GET /api/sessions?movieId=...` uses `SessionRepository.findByMovieIdNullable` `(src/main/java/com/cinema/repository/SessionRepository.java)` to list sessions for a given movie (or all if no param).
 3. Viewing seat map and availability: Implemented seat `map/availability` endpoint: `src/main/java/com/cinema/web/controller/SessionController.java` → `GET /api/sessions/{id}/seats` delegates to `SessionService.getSeatAvailability(...)`.

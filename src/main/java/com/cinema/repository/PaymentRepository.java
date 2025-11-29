@@ -1,10 +1,14 @@
 package com.cinema.repository;
 
 import com.cinema.domain.model.Payment;
+import com.cinema.domain.enums.PaymentMethod;
 import com.cinema.web.dto.report.RevenueRow;
+import com.cinema.web.dto.report.RevenuePeriodRow;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import java.time.LocalDateTime;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
@@ -24,4 +28,19 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
       + "JOIN Session s ON r.session = s "
       + "GROUP BY s.id, s.startTime ORDER BY s.startTime DESC")
   List<Object[]> revenueBySession();
+
+  @Query("SELECT new com.cinema.web.dto.report.RevenuePeriodRow("
+      + "COALESCE(CAST(p.paymentMethod AS string),'ALL'), "
+      + "(p.promotion IS NOT NULL), "
+      + "SUM(p.finalAmount)) "
+      + "FROM Payment p "
+      + "WHERE (:start IS NULL OR p.paymentDate >= :start) "
+      + "AND (:end IS NULL OR p.paymentDate <= :end) "
+      + "AND (:method IS NULL OR p.paymentMethod = :method) "
+      + "AND (:promoOnly = false OR p.promotion IS NOT NULL) "
+      + "GROUP BY p.paymentMethod, (p.promotion IS NOT NULL)")
+  List<RevenuePeriodRow> revenueByPeriod(@Param("start") LocalDateTime start,
+                                         @Param("end") LocalDateTime end,
+                                         @Param("method") PaymentMethod method,
+                                         @Param("promoOnly") boolean promoOnly);
 }

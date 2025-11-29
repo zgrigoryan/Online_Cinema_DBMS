@@ -133,6 +133,7 @@ public class ReservationService {
       payment.setFinalAmount(BigDecimal.ZERO);
       paymentRepository.save(payment);
     }
+    sessionService.recalcAvailableSeats(reservation.getSession());
     return reservationRepository.save(reservation);
   }
 
@@ -204,6 +205,8 @@ public class ReservationService {
     reservation.setPayment(savedPayment);
     reservation.setTotalAmount(total);
     reservation.setStatus(ReservationStatus.CONFIRMED);
+    updateMembershipStatus(reservation.getCustomer());
+    sessionService.recalcAvailableSeats(session);
     return reservationRepository.save(reservation);
   }
 
@@ -213,5 +216,25 @@ public class ReservationService {
         seat.getCategory() != null ? seat.getCategory().toUpperCase() : "STANDARD",
         BigDecimal.ONE);
     return session.getSessionPrice().multiply(multiplier).add(base);
+  }
+
+  private void updateMembershipStatus(Customer customer) {
+    List<Reservation> history = reservationRepository.findByCustomerOrderByReservationDateDesc(customer);
+    BigDecimal spend = history.stream()
+        .filter(r -> r.getStatus() == ReservationStatus.CONFIRMED)
+        .map(Reservation::getTotalAmount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    String newStatus;
+    if (spend.compareTo(BigDecimal.valueOf(1000)) >= 0) {
+      newStatus = "PLATINUM";
+    } else if (spend.compareTo(BigDecimal.valueOf(500)) >= 0) {
+      newStatus = "GOLD";
+    } else if (spend.compareTo(BigDecimal.valueOf(200)) >= 0) {
+      newStatus = "SILVER";
+    } else {
+      newStatus = "REGULAR";
+    }
+    customer.setMembershipStatus(com.cinema.domain.enums.MembershipStatus.valueOf(newStatus));
+    customerRepository.save(customer);
   }
 }

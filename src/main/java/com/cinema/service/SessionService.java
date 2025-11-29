@@ -83,6 +83,14 @@ public class SessionService {
   }
 
   @Transactional
+  public void recalcAvailableSeats(Session session) {
+    long booked = ticketRepository.countByReservation_Session(session);
+    int remaining = session.getHall().getCapacity() - (int) booked;
+    session.setAvailableSeats(Math.max(remaining, 0));
+    sessionRepository.save(session);
+  }
+
+  @Transactional
   public void adjustAvailableSeats(Session session, int delta) {
     int updated = session.getAvailableSeats() + delta;
     if (updated < 0) {
