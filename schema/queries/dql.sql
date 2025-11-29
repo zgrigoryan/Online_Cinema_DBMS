@@ -1,3 +1,81 @@
+-- 2. Browse Movies and View Details
+SELECT 
+    m.movie_id,
+    m.title,
+    m.genre,
+    m.duration,
+    m.description,
+    m.release_year,
+    AVG(r.rating) AS avg_rating,
+    COUNT(r.review_id) AS total_reviews
+FROM movie m
+LEFT JOIN review r ON m.movie_id = r.movie_id
+GROUP BY m.movie_id, m.title, m.genre, m.duration, m.description, m.release_year
+ORDER BY avg_rating DESC NULLS LAST, total_reviews DESC;
+
+-- 3. View Upcoming Sessions for a Selected Movie
+SELECT 
+    s.session_id,
+    m.movie_id,
+    m.title AS movie_title,
+    s.show_date,
+    s.start_time,
+    s.end_time,
+    ch.hall_id,
+    ch.name AS hall_name,
+    ch.type AS hall_type,
+    ch.capacity AS total_capacity,
+    s.available_seats,
+    (ch.capacity - s.available_seats) AS seats_booked,
+    s.session_price
+FROM session s
+JOIN movie m ON s.movie_id = m.movie_id
+JOIN cinema_hall ch ON s.hall_id = ch.hall_id
+WHERE m.movie_id = 8   -- for checking
+  AND s.start_time >= NOW()
+ORDER BY s.start_time;
+
+-- 4. Session Seat Map and Availability
+SELECT 
+    se.seat_id,
+    se.row_number,
+    se.seat_number,
+    se.category,
+    se.base_price,
+    CASE 
+        WHEN se.seat_id IN (
+            SELECT t.seat_id
+            FROM ticket t
+            INNER JOIN reservation r ON t.reservation_id = r.reservation_id
+            WHERE r.session_id = 1
+              AND r.status IN ('PENDING', 'CONFIRMED')
+        ) THEN 'RESERVED'
+        ELSE 'AVAILABLE'
+    END AS seat_status
+FROM 
+    seat se
+WHERE 
+    se.hall_id = (SELECT hall_id FROM session WHERE session_id = 1)
+ORDER BY 
+    se.row_number, se.seat_number;
+
+-- 5. Validate Seat Availability Before Booking
+SELECT 
+    s.seat_id,
+    s.row_number,
+    s.seat_number,
+    CASE 
+        WHEN t.seat_id IS NOT NULL THEN 'OCCUPIED'
+        ELSE 'AVAILABLE'
+    END AS availability_status
+FROM seat s
+LEFT JOIN ticket t ON s.seat_id = t.seat_id
+LEFT JOIN reservation r ON t.reservation_id = r.reservation_id
+    AND r.session_id = 2
+    AND r.status IN ('CONFIRMED', 'PENDING')
+WHERE s.seat_id IN (6, 7, 8)
+  AND s.hall_id = (SELECT hall_id FROM session WHERE session_id = 2);
+
 -- 7. Cancel reservation
 UPDATE reservation
 SET status = 'CANCELLED'
