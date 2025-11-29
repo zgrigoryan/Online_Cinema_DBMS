@@ -8,20 +8,20 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
-  @Query("SELECT new com.cinema.web.dto.report.RevenueRow(CAST(p.paidAt AS date), SUM(p.amount)) "
-      + "FROM Payment p WHERE p.status = 'PAID' GROUP BY CAST(p.paidAt AS date) ORDER BY CAST(p.paidAt AS date) DESC")
+  @Query("SELECT new com.cinema.web.dto.report.RevenueRow(CAST(p.paymentDate AS date), SUM(p.finalAmount)) "
+      + "FROM Payment p GROUP BY CAST(p.paymentDate AS date) ORDER BY CAST(p.paymentDate AS date) DESC")
   List<RevenueRow> revenueByDay();
 
-  @Query("SELECT m.title, SUM(pay.amount) FROM Payment pay "
-      + "JOIN Reservation r ON pay.reservation = r "
+  @Query("SELECT m.title, SUM(pay.finalAmount) FROM Payment pay "
+      + "JOIN pay.reservations r "
       + "JOIN Session s ON r.session = s "
       + "JOIN Movie m ON s.movie = m "
-      + "WHERE pay.status = 'PAID' GROUP BY m.title ORDER BY SUM(pay.amount) DESC")
+      + "GROUP BY m.title ORDER BY SUM(pay.finalAmount) DESC")
   List<Object[]> revenueByMovie();
 
-  @Query("SELECT s.id, s.startTime, SUM(pay.amount) FROM Payment pay "
-      + "JOIN Reservation r ON pay.reservation = r "
+  @Query("SELECT s.id, s.startTime, SUM(pay.finalAmount) FROM Payment pay "
+      + "JOIN pay.reservations r "
       + "JOIN Session s ON r.session = s "
-      + "WHERE pay.status = 'PAID' GROUP BY s.id, s.startTime ORDER BY s.startTime DESC")
+      + "GROUP BY s.id, s.startTime ORDER BY s.startTime DESC")
   List<Object[]> revenueBySession();
 }

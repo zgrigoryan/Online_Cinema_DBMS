@@ -1,10 +1,9 @@
 package com.cinema.repository;
 
-import com.cinema.domain.enums.SessionStatus;
 import com.cinema.domain.model.CinemaHall;
 import com.cinema.domain.model.Movie;
 import com.cinema.domain.model.Session;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -17,10 +16,9 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
   @Query("SELECT s FROM Session s WHERE (:movieId IS NULL OR s.movie.id = :movieId)")
   List<Session> findByMovieIdNullable(@Param("movieId") Long movieId);
 
-  @Query("SELECT s FROM Session s WHERE s.hall = :hall AND s.status IN :statuses "
+  @Query("SELECT s FROM Session s WHERE s.hall = :hall "
       + "AND s.startTime < :endTime AND s.endTime > :startTime")
   List<Session> findOverlappingSessions(@Param("hall") CinemaHall hall,
-                                        @Param("startTime") OffsetDateTime startTime,
-                                        @Param("endTime") OffsetDateTime endTime,
-                                        @Param("statuses") List<SessionStatus> statuses);
+                                        @Param("startTime") LocalDateTime startTime,
+                                        @Param("endTime") LocalDateTime endTime);
 }

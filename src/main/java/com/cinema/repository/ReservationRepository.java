@@ -8,5 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
   boolean existsByCustomer(Customer customer);
 
-  List<Reservation> findByCustomerOrderByReservedAtDesc(Customer customer);
+  List<Reservation> findByCustomerOrderByReservationDateDesc(Customer customer);
 }
