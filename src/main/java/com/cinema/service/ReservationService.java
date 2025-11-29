@@ -93,14 +93,16 @@ public class ReservationService {
     reservation.setReservationDate(LocalDateTime.now());
     reservation.setTotalAmount(total);
 
-    seats.forEach(seat -> {
+    int ticketNumber = 1;
+    for (Seat seat : seats) {
       Ticket ticket = new Ticket();
       ticket.setReservation(reservation);
+      ticket.setTicketNumber(ticketNumber++);
       ticket.setSeat(seat);
       ticket.setTicketPrice(session.getSessionPrice());
       ticket.setPurchaseDate(LocalDateTime.now());
       reservation.getTickets().add(ticket);
-    });
+    }
     sessionService.adjustAvailableSeats(session, -seats.size());
 
     Payment payment = new Payment();
