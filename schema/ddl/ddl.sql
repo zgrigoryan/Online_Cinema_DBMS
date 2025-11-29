@@ -6,7 +6,7 @@ CREATE TABLE person (
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     phone VARCHAR(50),
-    password_hash VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE customer (
@@ -46,7 +46,7 @@ CREATE TABLE seat (
     seat_number INTEGER NOT NULL CHECK (seat_number > 0),
     base_price NUMERIC(10, 2) NOT NULL CHECK (base_price >= 0),
     category VARCHAR(50) NOT NULL DEFAULT 'Standard',
-    CONSTRAINT seat_unique_per_hall UNIQUE (hall_id, seat_row, seat_number)
+    CONSTRAINT seat_unique_per_hall UNIQUE (hall_id, row_number, seat_number)
 );
 
 CREATE TABLE promotion (
@@ -76,7 +76,7 @@ CREATE TABLE session (
 CREATE TABLE payment (
     payment_id SERIAL PRIMARY KEY,
     promotion_id INT REFERENCES promotion (promotion_id),
-    final_amount NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (amount >= 0),
+    final_amount NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (final_amount >= 0),
     payment_method VARCHAR(30) NOT NULL,
     payment_date TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -98,10 +98,10 @@ CREATE TABLE ticket (
     reservation_id INT NOT NULL REFERENCES reservation (reservation_id) ON DELETE CASCADE, 
     ticket_number INTEGER NOT NULL,
     seat_id INT NOT NULL REFERENCES seat (seat_id),
-    ticket_price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
+    ticket_price NUMERIC(10, 2) NOT NULL CHECK (ticket_price >= 0),
     purchase_date TIMESTAMP NOT NULL DEFAULT NOW(),
     PRIMARY KEY (reservation_id, ticket_number),
-    CONSTRAINT ticket_reservation_seat UNIQUE (reservation_id, seat_id),
+    CONSTRAINT ticket_reservation_seat UNIQUE (reservation_id, seat_id)
     -- CONSTRAINT ticket_session_seat UNIQUE (session_id, seat_id),
     -- CONSTRAINT ticket_reservation_session_fk FOREIGN KEY (reservation_id, session_id) REFERENCES reservation (reservation_id, session_id) ON DELETE CASCADE
 );
@@ -121,12 +121,12 @@ CREATE TABLE works_on (
     movie_id INT NOT NULL REFERENCES movie (movie_id),
     role VARCHAR(100) NOT NULL CHECK(role IN ('ACTOR', 'DIRECTOR', 'PRODUCER', 'WRITER', 'CINEMATOGRAPHER')),
     biography TEXT,
-    PRIMARY KEY (employee_id, movie_id, role)
+    PRIMARY KEY (person_id, movie_id, role)
 );
 
 CREATE TABLE monitors (
-    employee_id INT NOT NULL REFERENCES employee (person_id),
-    session_id INT NOT NULL REFERENCES session (id),
+    employee_id INT NOT NULL REFERENCES employee (employee_id),
+    session_id INT NOT NULL REFERENCES session (session_id),
     PRIMARY KEY (employee_id, session_id)
 );
 
@@ -143,5 +143,4 @@ CREATE TABLE makes (
 );
 CREATE INDEX idx_session_movie ON session (movie_id);
 CREATE INDEX idx_reservation_customer ON reservation (customer_id);
-CREATE INDEX idx_ticket_session ON ticket (session_id);
 CREATE INDEX idx_review_movie ON review (movie_id);
