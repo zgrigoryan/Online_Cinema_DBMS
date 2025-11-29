@@ -77,25 +77,17 @@ WHERE
 ORDER BY 
     se.row_number, se.seat_number;
 
--- 5. Validate Seat Availability Before Booking
+-- 5. Checking most Profitable Cinema Hall
 SELECT 
-    s.seat_id,
-    s.row_number,
-    s.seat_number,
-    CASE 
-        WHEN t.seat_id IS NOT NULL THEN 'OCCUPIED'
-        ELSE 'AVAILABLE'
-    END AS availability_status
-FROM seat s
-LEFT JOIN (
-    SELECT t.seat_id, t.reservation_id
-    FROM ticket t
-    INNER JOIN reservation r ON t.reservation_id = r.reservation_id
-    WHERE r.session_id = 2
-      AND r.status IN ('CONFIRMED', 'PENDING')
-) t ON s.seat_id = t.seat_id
-WHERE s.seat_id IN (6, 7, 8) -- for checking
-  AND s.hall_id = (SELECT hall_id FROM session WHERE session_id = 2);
+    ch.hall_id,
+    ch.name,
+    SUM(pay.final_amount) AS total_revenue
+FROM cinema_hall ch
+JOIN session s ON s.hall_id = ch.hall_id
+JOIN reservation r ON r.session_id = s.session_id
+JOIN payment pay ON pay.payment_id = r.payment_id
+GROUP BY ch.hall_id, ch.name
+ORDER BY total_revenue DESC;
 
 -- 7. Cancel reservation
 UPDATE reservation
