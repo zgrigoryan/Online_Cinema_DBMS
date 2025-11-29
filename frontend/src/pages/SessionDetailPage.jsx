@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
-import { createReservation, fetchSession, fetchSessionSeats } from '../api';
+import { createReservation, fetchSession, fetchSessionSeats, purchaseReservation } from '../api';
 
 export default function SessionDetailPage() {
   const { id } = useParams();
@@ -11,6 +11,8 @@ export default function SessionDetailPage() {
   const [selected, setSelected] = useState([]);
   const [error, setError] = useState('');
   const [promotion, setPromotion] = useState('');
+  const [reservationId, setReservationId] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('CREDIT_CARD');
 
   useEffect(() => {
     fetchSession(id).then(setSession).catch(() => setError('Could not load session'));
@@ -30,11 +32,23 @@ export default function SessionDetailPage() {
     }
     setError('');
     try {
-      await createReservation(id, selected, promotion || null);
-      alert('Reservation confirmed');
-      navigate('/');
+      const reservation = await createReservation(id, selected, promotion || null);
+      setReservationId(reservation.id);
+      alert('Reservation created. Complete purchase to confirm.');
     } catch (err) {
       setError(err.response?.data?.message || 'Reservation failed');
+    }
+  };
+
+  const handlePurchase = async () => {
+    if (!reservationId) return;
+    setError('');
+    try {
+      await purchaseReservation(reservationId, paymentMethod, promotion || null);
+      alert('Purchase completed');
+      navigate('/history');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Purchase failed');
     }
   };
 
@@ -47,7 +61,7 @@ export default function SessionDetailPage() {
           <div className="row"><strong>Movie:</strong> {session.movie?.title}</div>
           <div className="row"><strong>Hall:</strong> {session.hall?.name}</div>
           <div className="row"><strong>Start:</strong> {new Date(session.startTime).toLocaleString()}</div>
-          <div className="row"><strong>Price:</strong> ${session.basePrice}</div>
+          <div className="row"><strong>Price:</strong> ${session.sessionPrice}</div>
         </div>
       )}
       <div className="seat-grid">
@@ -61,7 +75,8 @@ export default function SessionDetailPage() {
               disabled={isBooked}
               onClick={() => toggleSeat(seat.seatId)}
             >
-              {seat.label || `${seat.row}-${seat.number}`}
+              <div>{seat.label || `${seat.row}-${seat.number}`}</div>
+              <div className="muted">${seat.price?.toFixed(2)}</div>
             </button>
           );
         })}
@@ -72,9 +87,24 @@ export default function SessionDetailPage() {
           value={promotion}
           onChange={(e) => setPromotion(e.target.value)}
         />
-        <button className="btn" onClick={handleReserve} disabled={selected.length === 0}>
-          Reserve {selected.length} seat(s)
-        </button>
+        {!reservationId && (
+          <button className="btn" onClick={handleReserve} disabled={selected.length === 0}>
+            Reserve {selected.length} seat(s)
+          </button>
+        )}
+        {reservationId && (
+          <div className="purchase">
+            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+              <option value="CREDIT_CARD">Credit Card</option>
+              <option value="DEBIT_CARD">Debit Card</option>
+              <option value="PAYPAL">PayPal</option>
+              <option value="CASH">Cash</option>
+            </select>
+            <button className="btn" onClick={handlePurchase}>
+              Complete Purchase
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

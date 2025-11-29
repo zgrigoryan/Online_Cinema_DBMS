@@ -23,7 +23,7 @@ export default function SessionsPage() {
             <div className="row"><strong>Hall:</strong> {s.hall?.name}</div>
             <div className="row"><strong>Start:</strong> {new Date(s.startTime).toLocaleString()}</div>
             <div className="row"><strong>End:</strong> {new Date(s.endTime).toLocaleString()}</div>
-            <div className="row"><strong>Price:</strong> ${s.basePrice}</div>
+            <div className="row"><strong>Price:</strong> ${s.sessionPrice}</div>
             <div className="row"><strong>Available seats:</strong> {s.availableSeats}</div>
             <Link className="btn" to={`/sessions/${s.id}`}>Book</Link>
           </div>

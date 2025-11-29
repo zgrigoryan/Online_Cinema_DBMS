@@ -23,6 +23,8 @@ export default function App() {
         <Link to="/" className="brand">Online Cinema</Link>
         <nav className="nav">
           <Link to="/">Movies</Link>
+          {token && <Link to="/history">My Reservations</Link>}
+          {token && <Link to="/profile">Profile</Link>}
           {token ? (
             <button className="btn" onClick={handleLogout}>Logout</button>
           ) : (

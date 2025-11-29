@@ -22,6 +22,11 @@ export async function register(payload) {
   return data.token;
 }
 
+export async function updateProfile(payload) {
+  const { data } = await api.put('/customers/me', payload);
+  return data;
+}
+
 export async function fetchMovies() {
   const { data } = await api.get('/movies');
   return data;
@@ -44,6 +49,16 @@ export async function fetchSessionSeats(sessionId) {
 
 export async function createReservation(sessionId, seatIds, promotionCode) {
   const { data } = await api.post('/reservations', { sessionId, seatIds, promotionCode });
+  return data;
+}
+
+export async function purchaseReservation(reservationId, paymentMethod, promotionCode) {
+  const { data } = await api.post(`/reservations/${reservationId}/purchase`, { paymentMethod, promotionCode });
+  return data;
+}
+
+export async function fetchHistory() {
+  const { data } = await api.get('/reservations/history');
   return data;
 }
 

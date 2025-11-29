@@ -60,6 +60,10 @@ input {
   color: #b91c1c;
   font-size: 0.9rem;
 }
+.success {
+  color: #0f5132;
+  font-size: 0.9rem;
+}
 .muted {
   color: #6b7280;
   font-size: 0.9rem;
@@ -85,6 +89,11 @@ input {
   border-radius: 6px;
   background: #f9fafb;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
 }
 .seat.selected {
   background: #2563eb;
