@@ -97,6 +97,18 @@ LEFT JOIN (
 WHERE s.seat_id IN (6, 7, 8) -- for checking
   AND s.hall_id = (SELECT hall_id FROM session WHERE session_id = 2);
 
+-- 6. Checking most Profitable Cinema Hall
+SELECT 
+    ch.hall_id,
+    ch.name,
+    SUM(pay.final_amount) AS total_revenue
+FROM cinema_hall ch
+JOIN session s ON s.hall_id = ch.hall_id
+JOIN reservation r ON r.session_id = s.session_id
+JOIN payment pay ON pay.payment_id = r.payment_id
+GROUP BY ch.hall_id, ch.name
+ORDER BY total_revenue DESC;
+
 -- 7. Cancel reservation
 UPDATE reservation
 SET status = 'CANCELLED'
