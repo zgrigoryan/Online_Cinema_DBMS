@@ -1,5 +1,22 @@
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
+DROP TABLE IF EXISTS makes CASCADE;
+DROP TABLE IF EXISTS manages CASCADE;
+DROP TABLE IF EXISTS monitors CASCADE;
+DROP TABLE IF EXISTS ticket CASCADE;
+DROP TABLE IF EXISTS review CASCADE;
+DROP TABLE IF EXISTS works_on CASCADE;
+DROP TABLE IF EXISTS reservation CASCADE;
+DROP TABLE IF EXISTS payment CASCADE;
+DROP TABLE IF EXISTS promotion CASCADE;
+DROP TABLE IF EXISTS session CASCADE;
+DROP TABLE IF EXISTS seat CASCADE;
+DROP TABLE IF EXISTS cinema_hall CASCADE;
+DROP TABLE IF EXISTS employee CASCADE;
+DROP TABLE IF EXISTS customer CASCADE;
+DROP TABLE IF EXISTS movie CASCADE;
+DROP TABLE IF EXISTS person CASCADE;
+
 CREATE TABLE person (
     person_id SERIAL PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
@@ -11,14 +28,14 @@ CREATE TABLE person (
 
 CREATE TABLE customer (
     customer_id INT PRIMARY KEY REFERENCES person (person_id),
-    membership_status VARCHAR(20) NOT NULL CHECK (membership_status IN ('ACTIVE', 'INACTIVE', 'SUSPENDED')),
+    membership_status VARCHAR(20) NOT NULL CHECK (membership_status IN ('REGULAR', 'SILVER', 'GOLD', 'PLATINUM')),
     registration_date TIMESTAMP NOT NULL
 );
 
 CREATE TABLE employee (
     employee_id INT PRIMARY KEY REFERENCES person (person_id),
     position VARCHAR(100) NOT NULL,
-    salary NUMERIC(10, 2) NOT NULL,
+    salary NUMERIC(10, 2) NOT NULL CHECK (salary >= 0),
     works_for_id INT REFERENCES employee (employee_id) ON DELETE SET NULL
 );
 
@@ -54,7 +71,8 @@ CREATE TABLE promotion (
     code VARCHAR(50) NOT NULL UNIQUE,
     discount_amount NUMERIC(5, 2) NOT NULL CHECK (discount_amount >= 0),
     start_date TIMESTAMP NOT NULL,
-    end_date TIMESTAMP NOT NULL
+    end_date TIMESTAMP NOT NULL,
+    CONSTRAINT promotion_date_valid CHECK (start_date < end_date) 
 );
 
 CREATE TABLE session (
@@ -63,7 +81,7 @@ CREATE TABLE session (
     hall_id INT NOT NULL REFERENCES cinema_hall (hall_id),
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
-    available_seats INTEGER NOT NULL,
+    available_seats INTEGER NOT NULL CHECK (available_seats >= 0),
     show_date DATE NOT NULL,
     session_price NUMERIC(10, 2) NOT NULL CHECK (session_price >= 0),
     CONSTRAINT session_time_valid CHECK (start_time < end_time),
@@ -73,28 +91,49 @@ CREATE TABLE session (
     )
 );
 
+-- before insert ot when available_seats or hall_id is updated
+-- check that available_seats does not exceed hall capacity 
+CREATE OR REPLACE FUNCTION enforce_session_capacity() RETURNS TRIGGER AS $$
+DECLARE
+    hall_capacity INTEGER;
+BEGIN
+    SELECT capacity INTO hall_capacity FROM cinema_hall WHERE hall_id = NEW.hall_id;
+    IF hall_capacity IS NULL THEN
+        RAISE EXCEPTION 'Hall % not found for session %', NEW.hall_id, NEW.session_id;
+    END IF;
+    IF NEW.available_seats > hall_capacity THEN
+        RAISE EXCEPTION 'available_seats % exceeds hall capacity % for hall %', NEW.available_seats, hall_capacity, NEW.hall_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_session_capacity
+BEFORE INSERT OR UPDATE OF available_seats, hall_id
+ON session
+FOR EACH ROW
+EXECUTE FUNCTION enforce_session_capacity();
+
 CREATE TABLE payment (
     payment_id SERIAL PRIMARY KEY,
     promotion_id INT REFERENCES promotion (promotion_id),
     final_amount NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (final_amount >= 0),
-    payment_method VARCHAR(30) NOT NULL,
+    payment_method VARCHAR(30) NOT NULL CHECK (payment_method IN ('CREDIT_CARD', 'DEBIT_CARD', 'PAYPAL', 'CASH')),
     payment_date TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE reservation (
     reservation_id SERIAL PRIMARY KEY,
-    customer_id INT NOT NULL REFERENCES customer (customer_id),
     session_id INT NOT NULL REFERENCES session (session_id),
-    payment_id INT NOT NULL UNIQUE REFERENCES payment (payment_id) ON DELETE CASCADE,
+    payment_id INT REFERENCES payment (payment_id) ON DELETE RESTRICT, -- nullable: reservation may not be paid yet
     status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'CONFIRMED', 'CANCELLED')),
-    total_amount NUMERIC(10, 2) NOT NULL,
+    total_amount NUMERIC(10, 2) NOT NULL CHECK (total_amount >= 0),
     reservation_date TIMESTAMP NOT NULL DEFAULT NOW(),
-    UNIQUE (customer_id, session_id)
+    customer_id INT NOT NULL REFERENCES customer (customer_id),
+    UNIQUE(session_id, customer_id)
 );
 
-
 CREATE TABLE ticket (
-    -- IS THIS CORRECT 
     reservation_id INT NOT NULL REFERENCES reservation (reservation_id) ON DELETE CASCADE, 
     ticket_number INTEGER NOT NULL,
     seat_id INT NOT NULL REFERENCES seat (seat_id),
@@ -102,9 +141,42 @@ CREATE TABLE ticket (
     purchase_date TIMESTAMP NOT NULL DEFAULT NOW(),
     PRIMARY KEY (reservation_id, ticket_number),
     CONSTRAINT ticket_reservation_seat UNIQUE (reservation_id, seat_id)
-    -- CONSTRAINT ticket_session_seat UNIQUE (session_id, seat_id),
-    -- CONSTRAINT ticket_reservation_session_fk FOREIGN KEY (reservation_id, session_id) REFERENCES reservation (reservation_id, session_id) ON DELETE CASCADE
 );
+
+-- before insert or update of seat_id or reservation_id on ticket
+-- check that the seat belongs to the same hall as the session in the reservation
+CREATE OR REPLACE FUNCTION enforce_ticket_seat_session() RETURNS TRIGGER AS $$
+DECLARE
+    seat_hall INT;
+    session_hall INT;
+BEGIN
+    SELECT hall_id INTO seat_hall FROM seat WHERE seat_id = NEW.seat_id;
+    IF seat_hall IS NULL THEN
+        RAISE EXCEPTION 'Seat % not found', NEW.seat_id;
+    END IF;
+
+    SELECT s.hall_id INTO session_hall
+    FROM reservation r
+    JOIN session s ON s.session_id = r.session_id
+    WHERE r.reservation_id = NEW.reservation_id;
+
+    IF session_hall IS NULL THEN
+        RAISE EXCEPTION 'Reservation % not found or has no session', NEW.reservation_id;
+    END IF;
+
+    IF seat_hall <> session_hall THEN
+        RAISE EXCEPTION 'Seat % belongs to hall %, but reservation % is for hall %', NEW.seat_id, seat_hall, NEW.reservation_id, session_hall;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_ticket_seat_matches_session
+BEFORE INSERT OR UPDATE OF seat_id, reservation_id
+ON ticket
+FOR EACH ROW
+EXECUTE FUNCTION enforce_ticket_seat_session();
 
 CREATE TABLE review (
     review_id SERIAL PRIMARY KEY,
@@ -141,6 +213,7 @@ CREATE TABLE makes (
     reservation_id INT NOT NULL REFERENCES reservation (reservation_id),
     PRIMARY KEY (customer_id, reservation_id)
 );
+
 CREATE INDEX idx_session_movie ON session (movie_id);
 CREATE INDEX idx_reservation_customer ON reservation (customer_id);
 CREATE INDEX idx_review_movie ON review (movie_id);
