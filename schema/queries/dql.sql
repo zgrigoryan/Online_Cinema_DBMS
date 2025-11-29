@@ -144,19 +144,17 @@ JOIN payment p ON r.payment_id = p.payment_id
 WHERE r.customer_id = customer_id
 ORDER BY r.reservation_date DESC, ticket_number ASC;
 
--- 9. Submit and Manage Movie Reviews
-INSERT INTO review (customer_id, movie_id, rating, comment)
+-- 9. Customer Genre Preference Profile
 SELECT 
-    r.customer_id,
-    s.movie_id,
-    5 AS rating,
-    'Great movie!' AS comment
-FROM reservation r
-JOIN ticket t ON r.reservation_id = t.reservation_id
+    c.customer_id,
+    m.genre,
+    COUNT(*) AS tickets_bought
+FROM customer c
+JOIN reservation r ON r.customer_id = c.customer_id
 JOIN session s ON r.session_id = s.session_id
-ORDER BY r.reservation_date DESC
-LIMIT 1
-RETURNING *;
+JOIN movie m ON s.movie_id = m.movie_id
+GROUP BY c.customer_id, m.genre
+ORDER BY c.customer_id, tickets_bought DESC;
 
 -- 10. Retrieve Film Crew for a Movie
 SELECT 
