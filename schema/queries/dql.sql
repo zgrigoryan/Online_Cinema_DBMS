@@ -1,3 +1,21 @@
+-- 1. Movie Rating Consistency Check (Detect Suspicious Ratings)
+SELECT 
+    r.review_id,
+    r.customer_id,
+    r.movie_id,
+    r.rating,
+    r.review_date
+FROM review r
+LEFT JOIN (
+    SELECT DISTINCT 
+        res.customer_id,
+        s.movie_id
+    FROM reservation res
+    JOIN ticket t ON res.reservation_id = t.reservation_id
+    JOIN session s ON res.session_id = s.session_id
+) valid ON valid.customer_id = r.customer_id AND valid.movie_id = r.movie_id
+WHERE valid.movie_id IS NULL;
+
 -- 2. Browse Movies and View Details
 SELECT 
     m.movie_id,
