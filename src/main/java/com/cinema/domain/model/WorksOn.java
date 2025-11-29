@@ -1,7 +1,10 @@
 package com.cinema.domain.model;
 
+import com.cinema.domain.enums.WorksOnRole;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
@@ -24,8 +27,8 @@ public class WorksOn {
 
   @Id
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "employee_id", nullable = false)
-  private Employee employee;
+  @JoinColumn(name = "person_id", nullable = false)
+  private Person person;
 
   @Id
   @ManyToOne(fetch = FetchType.LAZY)
@@ -33,30 +36,34 @@ public class WorksOn {
   private Movie movie;
 
   @Id
+  @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 100)
-  private String role;
+  private WorksOnRole role;
+
+  @Column(columnDefinition = "TEXT")
+  private String biography;
 
   @Getter
   @Setter
   @NoArgsConstructor
   public static class WorksOnId implements Serializable {
-    private Long employee;
+    private Long person;
     private Long movie;
-    private String role;
+    private WorksOnRole role;
 
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       WorksOnId that = (WorksOnId) o;
-      return Objects.equals(employee, that.employee)
+      return Objects.equals(person, that.person)
           && Objects.equals(movie, that.movie)
           && Objects.equals(role, that.role);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(employee, movie, role);
+      return Objects.hash(person, movie, role);
     }
   }
 }

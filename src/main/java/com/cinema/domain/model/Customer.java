@@ -7,6 +7,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,13 +15,13 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "customer")
-@PrimaryKeyJoinColumn(name = "person_id")
+@PrimaryKeyJoinColumn(name = "customer_id")
 public class Customer extends Person {
 
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
-  private MembershipStatus membershipStatus = MembershipStatus.ACTIVE;
+  @Column(name = "membership_status", nullable = false, length = 20)
+  private MembershipStatus membershipStatus = MembershipStatus.REGULAR;
 
-  @Column(nullable = false)
-  private Integer loyaltyPoints = 0;
+  @Column(name = "registration_date", nullable = false)
+  private LocalDateTime registrationDate = LocalDateTime.now();
 }

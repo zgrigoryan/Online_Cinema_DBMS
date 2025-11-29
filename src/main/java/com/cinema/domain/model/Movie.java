@@ -8,7 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,6 +19,7 @@ public class Movie {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "movie_id")
   private Long id;
 
   @Column(nullable = false, unique = true, length = 255)
@@ -28,20 +28,15 @@ public class Movie {
   @Column(columnDefinition = "TEXT")
   private String description;
 
-  @Column(nullable = false)
+  @Column(nullable = false, length = 100)
+  private String genre = "Unknown";
+
+  @Column(name = "duration", nullable = false)
   private Integer durationMinutes;
 
-  private LocalDate releaseDate;
+  @Column(name = "release_year")
+  private LocalDate releaseYear;
 
-  @Column(nullable = false)
-  private Boolean isActive = Boolean.TRUE;
-
-  @Column(nullable = false, precision = 3, scale = 2)
-  private BigDecimal avgRating = BigDecimal.ZERO;
-
-  @Column(nullable = false)
-  private OffsetDateTime createdAt = OffsetDateTime.now();
-
-  @Column(nullable = false)
-  private OffsetDateTime updatedAt = OffsetDateTime.now();
+  @Column(name = "movie_rating", precision = 10, scale = 2)
+  private BigDecimal movieRating;
 }

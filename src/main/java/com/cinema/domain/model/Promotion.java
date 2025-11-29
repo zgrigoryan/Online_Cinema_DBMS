@@ -7,7 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -19,31 +19,18 @@ public class Promotion {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "promotion_id")
   private Long id;
 
   @Column(nullable = false, unique = true, length = 50)
   private String code;
 
-  @Column(columnDefinition = "TEXT")
-  private String description;
-
   @Column(nullable = false, precision = 5, scale = 2)
-  private BigDecimal discountPercent;
+  private BigDecimal discountAmount;
 
-  @Column(nullable = false)
-  private LocalDate validFrom;
+  @Column(name = "start_date", nullable = false)
+  private LocalDateTime startDate;
 
-  @Column(nullable = false)
-  private LocalDate validTo;
-
-  @Column(nullable = false)
-  private Boolean active = Boolean.TRUE;
-
-  @Column(nullable = false, precision = 10, scale = 2)
-  private BigDecimal minAmount = BigDecimal.ZERO;
-
-  private Integer usageLimit;
-
-  @Column(nullable = false)
-  private Integer timesRedeemed = 0;
+  @Column(name = "end_date", nullable = false)
+  private LocalDateTime endDate;
 }

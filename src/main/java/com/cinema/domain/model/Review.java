@@ -9,7 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,6 +21,7 @@ public class Review {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "review_id")
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
@@ -37,9 +38,6 @@ public class Review {
   @Column(columnDefinition = "TEXT")
   private String comment;
 
-  @Column(nullable = false)
-  private OffsetDateTime createdAt = OffsetDateTime.now();
-
-  @Column(nullable = false)
-  private OffsetDateTime updatedAt = OffsetDateTime.now();
+  @Column(name = "review_date", nullable = false)
+  private LocalDateTime reviewDate = LocalDateTime.now();
 }

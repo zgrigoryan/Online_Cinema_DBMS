@@ -1,10 +1,7 @@
 package com.cinema.domain.model;
 
-import com.cinema.domain.enums.SessionStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -13,7 +10,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,6 +23,7 @@ public class Session {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "session_id")
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
@@ -35,25 +34,18 @@ public class Session {
   @JoinColumn(name = "hall_id", nullable = false)
   private CinemaHall hall;
 
-  @Column(nullable = false)
-  private OffsetDateTime startTime;
+  @Column(name = "start_time", nullable = false)
+  private LocalDateTime startTime;
 
-  @Column(nullable = false)
-  private OffsetDateTime endTime;
+  @Column(name = "end_time", nullable = false)
+  private LocalDateTime endTime;
 
-  @Column(nullable = false)
-  private BigDecimal basePrice;
+  @Column(name = "session_price", nullable = false, precision = 10, scale = 2)
+  private BigDecimal sessionPrice;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
-  private SessionStatus status = SessionStatus.SCHEDULED;
-
-  @Column(nullable = false)
+  @Column(name = "available_seats", nullable = false)
   private Integer availableSeats;
 
-  @Column(nullable = false)
-  private OffsetDateTime createdAt = OffsetDateTime.now();
-
-  @Column(nullable = false)
-  private OffsetDateTime updatedAt = OffsetDateTime.now();
+  @Column(name = "show_date", nullable = false)
+  private LocalDate showDate;
 }

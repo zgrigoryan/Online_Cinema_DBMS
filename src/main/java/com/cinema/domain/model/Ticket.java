@@ -1,10 +1,7 @@
 package com.cinema.domain.model;
 
-import com.cinema.domain.enums.TicketStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
@@ -12,6 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -35,14 +33,9 @@ public class Ticket {
   @JoinColumn(name = "seat_id", nullable = false)
   private Seat seat;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "session_id", nullable = false)
-  private Session session;
+  @Column(name = "ticket_price", nullable = false, precision = 10, scale = 2)
+  private BigDecimal ticketPrice;
 
-  @Column(nullable = false, precision = 10, scale = 2)
-  private BigDecimal price;
-
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
-  private TicketStatus status = TicketStatus.ACTIVE;
+  @Column(name = "purchase_date", nullable = false)
+  private LocalDateTime purchaseDate = LocalDateTime.now();
 }

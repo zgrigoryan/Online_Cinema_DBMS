@@ -1,20 +1,16 @@
 package com.cinema.domain.model;
 
-import com.cinema.domain.enums.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
-import jakarta.persistence.Version;
 import java.util.Collection;
 import java.util.List;
-import java.time.OffsetDateTime;
+import com.cinema.domain.enums.Role;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,6 +26,7 @@ public class Person implements UserDetails {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "person_id")
   private Long id;
 
   @Column(nullable = false, length = 100)
@@ -47,22 +44,20 @@ public class Person implements UserDetails {
   @Column(nullable = false, length = 255)
   private String passwordHash;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
-  private Role role;
-
-  @Column(nullable = false)
-  private OffsetDateTime createdAt = OffsetDateTime.now();
-
-  @Column(nullable = false)
-  private OffsetDateTime updatedAt = OffsetDateTime.now();
-
-  @Version
-  private Long version;
-
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    return List.of(new SimpleGrantedAuthority("ROLE_" + getRole().name()));
+  }
+
+  public Role getRole() {
+    if (this instanceof Employee employee) {
+      String position = employee.getPosition();
+      if (position != null && position.equalsIgnoreCase("ADMIN")) {
+        return Role.ADMIN;
+      }
+      return Role.STAFF;
+    }
+    return Role.CUSTOMER;
   }
 
   @Override
