@@ -1,11 +1,13 @@
 package com.cinema.web.controller;
 
+import com.cinema.domain.enums.HallType;
 import com.cinema.domain.model.CinemaHall;
 import com.cinema.domain.model.Seat;
 import com.cinema.repository.CinemaHallRepository;
 import com.cinema.repository.SeatRepository;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,11 +34,11 @@ public class AdminHallController {
   @PostMapping
   public ResponseEntity<CinemaHall> createHall(@RequestParam @NotBlank String name,
                                                @RequestParam @Min(1) Integer capacity,
-                                               @RequestParam(required = false) String location) {
+                                               @RequestParam(defaultValue = "REGULAR") HallType type) {
     CinemaHall hall = new CinemaHall();
     hall.setName(name);
     hall.setCapacity(capacity);
-    hall.setLocation(location);
+    hall.setType(type);
     return ResponseEntity.ok(hallRepository.save(hall));
   }
 
@@ -50,13 +52,15 @@ public class AdminHallController {
   public ResponseEntity<Seat> addSeat(@PathVariable Long hallId,
                                       @RequestParam @Min(1) Integer row,
                                       @RequestParam @Min(1) Integer number,
-                                      @RequestParam(required = false) String label) {
+                                      @RequestParam @Min(0) Double basePrice,
+                                      @RequestParam(defaultValue = "Standard") String category) {
     CinemaHall hall = hallRepository.findById(hallId).orElseThrow();
     Seat seat = new Seat();
     seat.setHall(hall);
-    seat.setSeatRow(row);
+    seat.setRowNumber(row);
     seat.setSeatNumber(number);
-    seat.setLabel(label);
+    seat.setBasePrice(BigDecimal.valueOf(basePrice));
+    seat.setCategory(category);
     return ResponseEntity.ok(seatRepository.save(seat));
   }
 }

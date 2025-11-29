@@ -1,5 +1,6 @@
 package com.cinema.web.dto.report;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -8,5 +9,5 @@ import lombok.Getter;
 @AllArgsConstructor
 public class RevenueRow {
   private LocalDate day;
-  private Double revenue;
+  private BigDecimal revenue;
 }

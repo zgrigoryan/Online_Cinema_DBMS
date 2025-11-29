@@ -31,15 +31,9 @@ public class AdminMovieController {
     movie.setTitle(request.getTitle());
     movie.setDescription(request.getDescription());
     movie.setDurationMinutes(request.getDurationMinutes());
+    movie.setReleaseYear(null);
     Movie saved = movieRepository.save(movie);
     return ResponseEntity.ok(saved);
-  }
-
-  @PatchMapping("/{id}/activate")
-  public ResponseEntity<Movie> activate(@PathVariable Long id, @RequestParam boolean active) {
-    Movie movie = movieRepository.findById(id).orElseThrow();
-    movie.setIsActive(active);
-    return ResponseEntity.ok(movieRepository.save(movie));
   }
 
   @PutMapping("/{id}")

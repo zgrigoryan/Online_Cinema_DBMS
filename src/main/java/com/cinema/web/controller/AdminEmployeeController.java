@@ -2,7 +2,6 @@ package com.cinema.web.controller;
 
 import com.cinema.domain.model.CinemaHall;
 import com.cinema.domain.model.Employee;
-import com.cinema.domain.model.Person;
 import com.cinema.domain.model.Session;
 import com.cinema.repository.CinemaHallRepository;
 import com.cinema.repository.EmployeeRepository;
@@ -11,6 +10,8 @@ import com.cinema.repository.MonitorsRepository;
 import com.cinema.repository.PersonRepository;
 import com.cinema.repository.SessionRepository;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -56,23 +57,19 @@ public class AdminEmployeeController {
                                          @RequestParam @NotBlank String lastName,
                                          @RequestParam @NotBlank String email,
                                          @RequestParam @NotBlank String password,
-                                         @RequestParam @NotBlank String jobTitle) {
+                                         @RequestParam @NotBlank String position,
+                                         @RequestParam @NotNull Double salary) {
     if (personRepository.findByEmail(email).isPresent()) {
       return ResponseEntity.badRequest().build();
     }
-    Person p = new Person();
-    p.setFirstName(firstName);
-    p.setLastName(lastName);
-    p.setEmail(email);
-    p.setPasswordHash(passwordEncoder.encode(password));
-    p.setRole(com.cinema.domain.enums.Role.STAFF);
-    personRepository.save(p);
-
-    Employee e = new Employee();
-    e.setId(p.getId());
-    e.setJobTitle(jobTitle);
-    e.setActive(true);
-    Employee saved = employeeRepository.save(e);
+    Employee employee = new Employee();
+    employee.setFirstName(firstName);
+    employee.setLastName(lastName);
+    employee.setEmail(email);
+    employee.setPasswordHash(passwordEncoder.encode(password));
+    employee.setPosition(position);
+    employee.setSalary(BigDecimal.valueOf(salary));
+    Employee saved = employeeRepository.save(employee);
     return ResponseEntity.ok(saved);
   }
 

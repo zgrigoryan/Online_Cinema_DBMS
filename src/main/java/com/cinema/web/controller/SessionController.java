@@ -39,7 +39,7 @@ public class SessionController {
   @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
   public ResponseEntity<Session> create(@Valid @RequestBody SessionRequest request) {
     Session session = sessionService.scheduleSession(
-        request.getMovieId(), request.getHallId(), request.getStartTime(), request.getEndTime(), request.getBasePrice());
+        request.getMovieId(), request.getHallId(), request.getStartTime(), request.getEndTime(), request.getSessionPrice());
     return ResponseEntity.ok(session);
   }
 

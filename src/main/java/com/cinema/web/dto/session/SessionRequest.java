@@ -2,7 +2,7 @@ package com.cinema.web.dto.session;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,12 +18,12 @@ public class SessionRequest {
 
   @NotNull
   @Future
-  private OffsetDateTime startTime;
+  private LocalDateTime startTime;
 
   @NotNull
   @Future
-  private OffsetDateTime endTime;
+  private LocalDateTime endTime;
 
   @NotNull
-  private Double basePrice;
+  private Double sessionPrice;
 }

@@ -2,10 +2,9 @@ package com.cinema.web.controller;
 
 import com.cinema.domain.model.Promotion;
 import com.cinema.repository.PromotionRepository;
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,25 +28,14 @@ public class AdminPromotionController {
 
   @PostMapping
   public ResponseEntity<Promotion> create(@RequestParam @NotBlank String code,
-                                          @RequestParam @Min(0) @Max(100) double discountPercent,
-                                          @RequestParam LocalDate validFrom,
-                                          @RequestParam LocalDate validTo,
-                                          @RequestParam(defaultValue = "0") double minAmount) {
+                                          @RequestParam @Min(0) double discountAmount,
+                                          @RequestParam LocalDateTime startDate,
+                                          @RequestParam LocalDateTime endDate) {
     Promotion p = new Promotion();
     p.setCode(code);
-    p.setDescription("Promo " + code);
-    p.setDiscountPercent(java.math.BigDecimal.valueOf(discountPercent));
-    p.setValidFrom(validFrom);
-    p.setValidTo(validTo);
-    p.setActive(true);
-    p.setMinAmount(java.math.BigDecimal.valueOf(minAmount));
-    return ResponseEntity.ok(promotionRepository.save(p));
-  }
-
-  @PatchMapping("/{id}/activate")
-  public ResponseEntity<Promotion> activate(@PathVariable Long id, @RequestParam boolean active) {
-    Promotion p = promotionRepository.findById(id).orElseThrow();
-    p.setActive(active);
+    p.setDiscountAmount(java.math.BigDecimal.valueOf(discountAmount));
+    p.setStartDate(startDate);
+    p.setEndDate(endDate);
     return ResponseEntity.ok(promotionRepository.save(p));
   }
 }
