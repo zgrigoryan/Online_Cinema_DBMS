@@ -1,3 +1,97 @@
+-- 7. Cancel reservation
+UPDATE reservation
+SET status = 'CANCELLED'
+WHERE reservation_id = 5
+RETURNING *;
+
+-- 8. Customer Purchase and Ticket History
+SELECT
+    r.reservation_id,
+    r.status AS reservation_status,
+    r.reservation_date,
+    t.ticket_number,
+    t.ticket_price,
+    t.seat_id,
+    st.row_number,
+    st.seat_number,
+    st.category AS seat_category,
+    ss.session_id,
+    ss.start_time,
+    ss.end_time,
+    ch.name AS hall_name,
+    m.title AS movie_title,
+    p.final_amount AS paid_amount,
+    p.payment_method,
+    p.payment_date
+FROM reservation r
+JOIN ticket t ON r.reservation_id = t.reservation_id
+JOIN seat st ON t.seat_id = st.seat_id
+JOIN session ss ON r.session_id = ss.session_id
+JOIN cinema_hall ch ON ss.hall_id = ch.hall_id
+JOIN movie m ON ss.movie_id = m.movie_id
+JOIN payment p ON r.payment_id = p.payment_id
+WHERE r.customer_id = customer_id
+ORDER BY r.reservation_date DESC, ticket_number ASC;
+
+-- 9. Submit and Manage Movie Reviews
+INSERT INTO review (customer_id, movie_id, rating, comment)
+SELECT 
+    r.customer_id,
+    s.movie_id,
+    5 AS rating,
+    'Great movie!' AS comment
+FROM reservation r
+JOIN ticket t ON r.reservation_id = t.reservation_id
+JOIN session s ON r.session_id = s.session_id
+ORDER BY r.reservation_date DESC
+LIMIT 1
+RETURNING *;
+
+-- 10. Retrieve Film Crew for a Movie
+SELECT 
+    p.first_name,
+    p.last_name,
+    w.role,
+    w.biography
+FROM works_on w
+JOIN person p ON p.person_id = w.person_id
+WHERE w.movie_id = movie_id;
+
+-- 11. Global Session Overlap Detection
+SELECT 
+    s1.session_id AS session_a,
+    s1.hall_id AS hall_a,
+    s1.start_time AS start_a,
+    s1.end_time AS end_a,
+    s2.session_id AS session_b,
+    s2.hall_id AS hall_b,
+    s2.start_time AS start_b,
+    s2.end_time AS end_b
+FROM session s1
+JOIN session s2
+    ON s1.hall_id = s2.hall_id
+   AND s1.session_id < s2.session_id
+   AND tsrange(s1.start_time, s1.end_time)
+       && tsrange(s2.start_time, s2.end_time)
+ORDER BY s1.hall_id, s1.start_time;
+
+-- 12. Hall-Specific Session Overlap Check (During Scheduling)
+SELECT 
+    s1.session_id AS session_a,
+    s1.hall_id    AS hall,
+    s1.start_time AS start_a,
+    s1.end_time   AS end_a,
+    s2.session_id AS session_b,
+    s2.start_time AS start_b,
+    s2.end_time   AS end_b
+FROM session s1
+JOIN session s2
+    ON s1.hall_id = s2.hall_id          
+   AND s1.session_id < s2.session_id    
+   AND s1.start_time < s2.end_time      
+   AND s1.end_time   > s2.start_time    
+ORDER BY hall, start_a;
+
 -- 13. Hall Utilization and Occupancy Analysis
 -- Seats sold vs hall capacity per session.
 SELECT
