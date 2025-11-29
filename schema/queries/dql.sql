@@ -69,11 +69,14 @@ SELECT
         ELSE 'AVAILABLE'
     END AS availability_status
 FROM seat s
-LEFT JOIN ticket t ON s.seat_id = t.seat_id
-LEFT JOIN reservation r ON t.reservation_id = r.reservation_id
-    AND r.session_id = 2
-    AND r.status IN ('CONFIRMED', 'PENDING')
-WHERE s.seat_id IN (6, 7, 8)
+LEFT JOIN (
+    SELECT t.seat_id, t.reservation_id
+    FROM ticket t
+    INNER JOIN reservation r ON t.reservation_id = r.reservation_id
+    WHERE r.session_id = 2
+      AND r.status IN ('CONFIRMED', 'PENDING')
+) t ON s.seat_id = t.seat_id
+WHERE s.seat_id IN (6, 7, 8) -- for checking
   AND s.hall_id = (SELECT hall_id FROM session WHERE session_id = 2);
 
 -- 7. Cancel reservation
