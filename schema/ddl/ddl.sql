@@ -1,5 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
+-- DROP TABLES (IF EXIST)
+
 DROP TABLE IF EXISTS makes CASCADE;
 DROP TABLE IF EXISTS manages CASCADE;
 DROP TABLE IF EXISTS monitors CASCADE;
@@ -17,6 +19,28 @@ DROP TABLE IF EXISTS customer CASCADE;
 DROP TABLE IF EXISTS movie CASCADE;
 DROP TABLE IF EXISTS person CASCADE;
 
+-- DROP ENUM TYPES (IF EXIST)
+
+DROP TYPE IF EXISTS membership_status_type CASCADE;
+DROP TYPE IF EXISTS hall_type CASCADE;
+DROP TYPE IF EXISTS payment_method_type CASCADE;
+DROP TYPE IF EXISTS reservation_status_type CASCADE;
+DROP TYPE IF EXISTS crew_role_type CASCADE;
+
+-- CREATE ENUM TYPES
+
+CREATE TYPE membership_status_type AS ENUM ('REGULAR', 'SILVER', 'GOLD', 'PLATINUM');
+
+CREATE TYPE hall_type AS ENUM ('VIP', 'REGULAR');
+
+CREATE TYPE payment_method_type AS ENUM ('CREDIT_CARD', 'DEBIT_CARD', 'PAYPAL', 'CASH');
+
+CREATE TYPE reservation_status_type AS ENUM ('PENDING', 'CONFIRMED', 'CANCELLED');
+
+CREATE TYPE crew_role_type AS ENUM ('ACTOR', 'DIRECTOR', 'PRODUCER', 'WRITER', 'CINEMATOGRAPHER');
+
+-- TABLES
+
 CREATE TABLE person (
     person_id SERIAL PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
@@ -28,7 +52,7 @@ CREATE TABLE person (
 
 CREATE TABLE customer (
     customer_id INT PRIMARY KEY REFERENCES person (person_id) ON DELETE CASCADE,
-    membership_status VARCHAR(20) NOT NULL CHECK (membership_status IN ('REGULAR', 'SILVER', 'GOLD', 'PLATINUM')),
+    membership_status membership_status_type NOT NULL,
     registration_date TIMESTAMP NOT NULL
 );
 
@@ -53,7 +77,7 @@ CREATE TABLE cinema_hall (
     hall_id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     capacity INTEGER NOT NULL CHECK (capacity > 0),
-    type VARCHAR(20) NOT NULL CHECK (type IN ('VIP', 'REGULAR'))
+    type hall_type NOT NULL
 );
 
 CREATE TABLE seat (
@@ -91,8 +115,7 @@ CREATE TABLE session (
     )
 );
 
--- before insert ot when available_seats or hall_id is updated
--- check that available_seats does not exceed hall capacity 
+-- Trigger to enforce hall capacity
 CREATE OR REPLACE FUNCTION enforce_session_capacity() RETURNS TRIGGER AS $$
 DECLARE
     hall_capacity INTEGER;
@@ -118,7 +141,7 @@ CREATE TABLE payment (
     payment_id SERIAL PRIMARY KEY,
     promotion_id INT REFERENCES promotion (promotion_id),
     final_amount NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (final_amount >= 0),
-    payment_method VARCHAR(30) NOT NULL CHECK (payment_method IN ('CREDIT_CARD', 'DEBIT_CARD', 'PAYPAL', 'CASH')),
+    payment_method payment_method_type NOT NULL,
     payment_date TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -126,7 +149,7 @@ CREATE TABLE reservation (
     reservation_id SERIAL PRIMARY KEY,
     session_id INT NOT NULL REFERENCES session (session_id) ON DELETE CASCADE,
     payment_id INT REFERENCES payment (payment_id) ON DELETE RESTRICT, -- nullable: reservation may not be paid yet
-    status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'CONFIRMED', 'CANCELLED')),
+    status reservation_status_type NOT NULL,
     total_amount NUMERIC(10, 2) NOT NULL CHECK (total_amount >= 0),
     reservation_date TIMESTAMP NOT NULL DEFAULT NOW(),
     customer_id INT NOT NULL REFERENCES customer (customer_id) ON DELETE CASCADE,
@@ -143,8 +166,7 @@ CREATE TABLE ticket (
     CONSTRAINT ticket_reservation_seat UNIQUE (reservation_id, seat_id)
 );
 
--- before insert or update of seat_id or reservation_id on ticket
--- check that the seat belongs to the same hall as the session in the reservation
+-- Trigger to enforce that the seat's hall matches the session's hall for the reservation
 CREATE OR REPLACE FUNCTION enforce_ticket_seat_session() RETURNS TRIGGER AS $$
 DECLARE
     seat_hall INT;
@@ -191,7 +213,7 @@ CREATE TABLE review (
 CREATE TABLE works_on (
     person_id INT NOT NULL REFERENCES person (person_id) ON DELETE CASCADE,
     movie_id INT NOT NULL REFERENCES movie (movie_id) ON DELETE CASCADE,
-    role VARCHAR(100) NOT NULL CHECK(role IN ('ACTOR', 'DIRECTOR', 'PRODUCER', 'WRITER', 'CINEMATOGRAPHER')),
+    role crew_role_type NOT NULL,
     biography TEXT,
     PRIMARY KEY (person_id, movie_id, role)
 );
