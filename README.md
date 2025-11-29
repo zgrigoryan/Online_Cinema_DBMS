@@ -104,4 +104,15 @@ Logic for availability: `src/main/java/com/cinema/service/SessionService.java` f
 7. Writing reviews: `POST /api/reviews` (`ReviewController` → `ReviewService.addOrUpdateReview`):
    - Ensures the customer attended a past session for the movie (checks tickets by customer/movie/endTime).
    - Upserts a `Review` (rating/comment/review_date) and recalculates `Movie.movie_rating`. Delete/window restrictions are not implemented; only upsert is supported.
+8. Profile update: `PUT /api/customers/me` (`CustomerController`) updates first/last name, email, phone for the authenticated customer.
+9. Seat map pricing: `GET /api/sessions/{id}/seats` now includes per-seat price (base_price + category multiplier + session_price) from `SessionService.getSeatAvailability`.
+10. Pending → purchase flow: reservations are `PENDING` with per-seat pricing; `POST /api/reservations/{id}/purchase` confirms, creates payment, and sets `CONFIRMED`. Cancellation forbids past-start, frees seats, zeroes payment (no refund entry).
+11. Purchase history enriched: `GET /api/reservations/history` returns `ReservationHistoryResponse` with session/hall/movie/ticket/promotion/payment details.
+12. Review deletion: `DELETE /api/reviews/{id}` lets a customer remove their review (no time-window rule).
 
+#### ADMIN/STAFF ops (where implemented)
+- Movies: `AdminMovieController` (`/api/admin/movies`) create/update.
+- Halls/Seats: `AdminHallController` (`/api/admin/halls`) create halls/seats; seat add guarded by hall capacity.
+- Sessions: `AdminSessionController` (`/api/admin/sessions`) create/delete; overlap + 10 min buffer enforced in `SessionService.scheduleSession`.
+- Employees: `AdminEmployeeController` create employees and assign monitors/manages links.
+- Promotions: `AdminPromotionController` create promotions; validation applied in `PromotionService` during purchase.

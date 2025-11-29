@@ -14,4 +14,6 @@ public interface TicketRepository extends JpaRepository<Ticket, TicketId> {
   List<Ticket> findByReservation_Customer_Id(Long customerId);
 
   List<Ticket> findByReservation_Session_Id(Long sessionId);
+
+  long countByReservation_Session(com.cinema.domain.model.Session session);
 }

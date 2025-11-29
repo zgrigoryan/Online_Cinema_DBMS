@@ -55,6 +55,10 @@ public class AdminHallController {
                                       @RequestParam @Min(0) Double basePrice,
                                       @RequestParam(defaultValue = "Standard") String category) {
     CinemaHall hall = hallRepository.findById(hallId).orElseThrow();
+    long currentSeats = seatRepository.countByHall(hall);
+    if (currentSeats >= hall.getCapacity()) {
+      return ResponseEntity.badRequest().build();
+    }
     Seat seat = new Seat();
     seat.setHall(hall);
     seat.setRowNumber(row);

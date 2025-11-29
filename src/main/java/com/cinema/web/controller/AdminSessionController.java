@@ -25,4 +25,10 @@ public class AdminSessionController {
         request.getMovieId(), request.getHallId(), request.getStartTime(), request.getEndTime(), request.getSessionPrice());
     return ResponseEntity.ok(session);
   }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> delete(@PathVariable Long id) {
+    sessionService.deleteSession(id);
+    return ResponseEntity.noContent().build();
+  }
 }

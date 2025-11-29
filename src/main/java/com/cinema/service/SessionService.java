@@ -11,6 +11,7 @@ import com.cinema.repository.TicketRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.time.Duration;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ public class SessionService {
       "VIP", BigDecimal.valueOf(1.2),
       "STANDARD", BigDecimal.ONE
   );
+  private static final long MIN_GAP_MINUTES = 10;
 
   public SessionService(SessionRepository sessionRepository,
                         MovieRepository movieRepository,
@@ -50,7 +52,9 @@ public class SessionService {
       throw new IllegalArgumentException("Hall ID cannot be null");
     }
     CinemaHall hall = hallRepository.findById(hallId).orElseThrow(() -> new IllegalArgumentException("Hall not found"));
-    List<Session> overlaps = sessionRepository.findOverlappingSessions(hall, start, end);
+    LocalDateTime bufferedStart = start.minusMinutes(MIN_GAP_MINUTES);
+    LocalDateTime bufferedEnd = end.plusMinutes(MIN_GAP_MINUTES);
+    List<Session> overlaps = sessionRepository.findOverlappingSessions(hall, bufferedStart, bufferedEnd);
     if (!overlaps.isEmpty()) {
       throw new IllegalStateException("Session overlaps with another session in the same hall");
     }
@@ -63,6 +67,19 @@ public class SessionService {
     session.setAvailableSeats(hall.getCapacity());
     session.setShowDate(start.toLocalDate());
     return sessionRepository.save(session);
+  }
+
+  @Transactional
+  public void deleteSession(Long sessionId) {
+    if (sessionId == null) {
+      throw new IllegalArgumentException("Session ID cannot be null");
+    }
+    Session session = sessionRepository.findById(sessionId)
+        .orElseThrow(() -> new IllegalArgumentException("Session not found"));
+    if (session.getStartTime().isBefore(LocalDateTime.now())) {
+      throw new IllegalStateException("Cannot delete sessions that have started");
+    }
+    sessionRepository.delete(session);
   }
 
   @Transactional
