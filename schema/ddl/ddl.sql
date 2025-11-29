@@ -1,159 +1,146 @@
--- Consolidated DDL for the cinema schema (aligned with current migrations V1-V6)
--- Create extension required for exclusion constraints
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 CREATE TABLE person (
-    id BIGSERIAL PRIMARY KEY,
+    person_id SERIAL PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     phone VARCHAR(50),
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'STAFF', 'CUSTOMER')),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    version BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE customer (
-    person_id BIGINT PRIMARY KEY REFERENCES person (id),
+    customer_id INT PRIMARY KEY REFERENCES person (person_id),
     membership_status VARCHAR(20) NOT NULL CHECK (membership_status IN ('ACTIVE', 'INACTIVE', 'SUSPENDED')),
-    loyalty_points INTEGER NOT NULL DEFAULT 0,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    registration_date TIMESTAMP NOT NULL
 );
 
 CREATE TABLE employee (
-    person_id BIGINT PRIMARY KEY REFERENCES person (id),
-    job_title VARCHAR(100) NOT NULL,
-    active BOOLEAN NOT NULL DEFAULT TRUE,
-    hire_date DATE NOT NULL DEFAULT CURRENT_DATE
+    employee_id INT PRIMARY KEY REFERENCES person (person_id),
+    position VARCHAR(100) NOT NULL,
+    salary NUMERIC(10, 2) NOT NULL,
+    works_for_id INT REFERENCES employee (employee_id) ON DELETE SET NULL
 );
 
 CREATE TABLE movie (
-    id BIGSERIAL PRIMARY KEY,
+    movie_id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
     genre VARCHAR(100) NOT NULL DEFAULT 'Unknown',
-    duration_minutes INTEGER NOT NULL CHECK (duration_minutes > 0),
-    release_date DATE,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    avg_rating NUMERIC(3, 2) NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    duration INTEGER NOT NULL CHECK (duration > 0),
+    release_year DATE, 
+    movie_rating NUMERIC(10,2) 
 );
 
 CREATE TABLE cinema_hall (
-    id BIGSERIAL PRIMARY KEY,
+    hall_id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     capacity INTEGER NOT NULL CHECK (capacity > 0),
-    location VARCHAR(255),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    type VARCHAR(20) NOT NULL CHECK (type IN ('VIP', 'REGULAR'))
 );
 
 CREATE TABLE seat (
-    id BIGSERIAL PRIMARY KEY,
-    hall_id BIGINT NOT NULL REFERENCES cinema_hall (id) ON DELETE CASCADE,
-    seat_row INTEGER NOT NULL CHECK (seat_row > 0),
+    seat_id SERIAL PRIMARY KEY,
+    hall_id INT NOT NULL REFERENCES cinema_hall (hall_id) ON DELETE CASCADE,
+    row_number INTEGER NOT NULL CHECK (row_number > 0),
     seat_number INTEGER NOT NULL CHECK (seat_number > 0),
-    label VARCHAR(10),
+    base_price NUMERIC(10, 2) NOT NULL CHECK (base_price >= 0),
+    category VARCHAR(50) NOT NULL DEFAULT 'Standard',
     CONSTRAINT seat_unique_per_hall UNIQUE (hall_id, seat_row, seat_number)
 );
 
 CREATE TABLE promotion (
-    id BIGSERIAL PRIMARY KEY,
+    promotion_id SERIAL PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,
-    description TEXT,
-    discount_percent NUMERIC(5, 2) NOT NULL CHECK (discount_percent >= 0 AND discount_percent <= 100),
-    valid_from DATE NOT NULL,
-    valid_to DATE NOT NULL,
-    active BOOLEAN NOT NULL DEFAULT TRUE,
-    min_amount NUMERIC(10, 2) NOT NULL DEFAULT 0,
-    usage_limit INTEGER,
-    times_redeemed INTEGER NOT NULL DEFAULT 0,
-    CONSTRAINT promotion_valid_dates CHECK (valid_from <= valid_to)
+    discount_amount NUMERIC(5, 2) NOT NULL CHECK (discount_amount >= 0),
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP NOT NULL
 );
 
 CREATE TABLE session (
-    id BIGSERIAL PRIMARY KEY,
-    movie_id BIGINT NOT NULL REFERENCES movie (id),
-    hall_id BIGINT NOT NULL REFERENCES cinema_hall (id),
-    start_time TIMESTAMPTZ NOT NULL,
-    end_time TIMESTAMPTZ NOT NULL,
-    base_price NUMERIC(10, 2) NOT NULL CHECK (base_price >= 0),
-    status VARCHAR(20) NOT NULL CHECK (status IN ('SCHEDULED', 'ACTIVE', 'CANCELLED', 'COMPLETED')),
+    session_id SERIAL PRIMARY KEY,
+    movie_id INT NOT NULL REFERENCES movie (movie_id),
+    hall_id INT NOT NULL REFERENCES cinema_hall (hall_id),
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
     available_seats INTEGER NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    show_date DATE NOT NULL,
+    session_price NUMERIC(10, 2) NOT NULL CHECK (session_price >= 0),
     CONSTRAINT session_time_valid CHECK (start_time < end_time),
     CONSTRAINT session_hall_overlaps EXCLUDE USING gist (
         hall_id WITH =,
-        tstzrange(start_time, end_time) WITH &&
-    ) WHERE (status IN ('SCHEDULED', 'ACTIVE'))
-);
-
-CREATE TABLE reservation (
-    id BIGSERIAL PRIMARY KEY,
-    customer_id BIGINT NOT NULL REFERENCES customer (person_id),
-    session_id BIGINT NOT NULL REFERENCES session (id),
-    status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'CONFIRMED', 'CANCELLED')),
-    total_amount NUMERIC(10, 2) NOT NULL DEFAULT 0,
-    promotion_id BIGINT REFERENCES promotion (id),
-    reserved_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (id, session_id)
-);
-
-CREATE TABLE ticket (
-    reservation_id BIGINT NOT NULL,
-    ticket_number INTEGER NOT NULL,
-    seat_id BIGINT NOT NULL REFERENCES seat (id),
-    session_id BIGINT NOT NULL REFERENCES session (id),
-    price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
-    status VARCHAR(20) NOT NULL CHECK (status IN ('ACTIVE', 'CANCELLED', 'REFUNDED')),
-    PRIMARY KEY (reservation_id, ticket_number),
-    CONSTRAINT ticket_reservation_seat UNIQUE (reservation_id, seat_id),
-    CONSTRAINT ticket_session_seat UNIQUE (session_id, seat_id),
-    CONSTRAINT ticket_reservation_session_fk FOREIGN KEY (reservation_id, session_id) REFERENCES reservation (id, session_id) ON DELETE CASCADE
+        tsrange(start_time, end_time) WITH &&
+    )
 );
 
 CREATE TABLE payment (
-    id BIGSERIAL PRIMARY KEY,
-    reservation_id BIGINT NOT NULL UNIQUE REFERENCES reservation (id) ON DELETE CASCADE,
-    amount NUMERIC(10, 2) NOT NULL CHECK (amount >= 0),
-    status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'PAID', 'REFUNDED')),
-    method VARCHAR(30) NOT NULL,
-    paid_at TIMESTAMPTZ
+    payment_id SERIAL PRIMARY KEY,
+    promotion_id INT REFERENCES promotion (promotion_id),
+    final_amount NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (amount >= 0),
+    payment_method VARCHAR(30) NOT NULL,
+    payment_date TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE reservation (
+    reservation_id SERIAL PRIMARY KEY,
+    customer_id INT NOT NULL REFERENCES customer (customer_id),
+    session_id INT NOT NULL REFERENCES session (session_id),
+    payment_id INT NOT NULL UNIQUE REFERENCES payment (payment_id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'CONFIRMED', 'CANCELLED')),
+    total_amount NUMERIC(10, 2) NOT NULL,
+    reservation_date TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE (customer_id, session_id)
+);
+
+
+CREATE TABLE ticket (
+    -- IS THIS CORRECT 
+    reservation_id INT NOT NULL REFERENCES reservation (reservation_id) ON DELETE CASCADE, 
+    ticket_number INTEGER NOT NULL,
+    seat_id INT NOT NULL REFERENCES seat (seat_id),
+    ticket_price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
+    purchase_date TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (reservation_id, ticket_number),
+    CONSTRAINT ticket_reservation_seat UNIQUE (reservation_id, seat_id),
+    -- CONSTRAINT ticket_session_seat UNIQUE (session_id, seat_id),
+    -- CONSTRAINT ticket_reservation_session_fk FOREIGN KEY (reservation_id, session_id) REFERENCES reservation (reservation_id, session_id) ON DELETE CASCADE
 );
 
 CREATE TABLE review (
-    id BIGSERIAL PRIMARY KEY,
-    customer_id BIGINT NOT NULL REFERENCES customer (person_id),
-    movie_id BIGINT NOT NULL REFERENCES movie (id),
+    review_id SERIAL PRIMARY KEY,
+    customer_id INT NOT NULL REFERENCES customer (customer_id),
+    movie_id INT NOT NULL REFERENCES movie (movie_id),
     rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
     comment TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    review_date TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT review_unique_per_customer UNIQUE (customer_id, movie_id)
 );
 
 CREATE TABLE works_on (
-    employee_id BIGINT NOT NULL REFERENCES employee (person_id),
-    movie_id BIGINT NOT NULL REFERENCES movie (id),
-    role VARCHAR(100) NOT NULL,
+    person_id INT NOT NULL REFERENCES person (person_id),
+    movie_id INT NOT NULL REFERENCES movie (movie_id),
+    role VARCHAR(100) NOT NULL CHECK(role IN ('ACTOR', 'DIRECTOR', 'PRODUCER', 'WRITER', 'CINEMATOGRAPHER')),
+    biography TEXT,
     PRIMARY KEY (employee_id, movie_id, role)
 );
 
 CREATE TABLE monitors (
-    employee_id BIGINT NOT NULL REFERENCES employee (person_id),
-    session_id BIGINT NOT NULL REFERENCES session (id),
+    employee_id INT NOT NULL REFERENCES employee (person_id),
+    session_id INT NOT NULL REFERENCES session (id),
     PRIMARY KEY (employee_id, session_id)
 );
 
 CREATE TABLE manages (
-    employee_id BIGINT NOT NULL REFERENCES employee (person_id),
-    hall_id BIGINT NOT NULL REFERENCES cinema_hall (id),
+    employee_id INT NOT NULL REFERENCES employee (employee_id),
+    hall_id INT NOT NULL REFERENCES cinema_hall (hall_id),
     PRIMARY KEY (employee_id, hall_id)
 );
 
+CREATE TABLE makes (
+    customer_id INT NOT NULL REFERENCES customer (customer_id),
+    reservation_id INT NOT NULL REFERENCES reservation (reservation_id),
+    PRIMARY KEY (customer_id, reservation_id)
+);
 CREATE INDEX idx_session_movie ON session (movie_id);
 CREATE INDEX idx_reservation_customer ON reservation (customer_id);
 CREATE INDEX idx_ticket_session ON ticket (session_id);
