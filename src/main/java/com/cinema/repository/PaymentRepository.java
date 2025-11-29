@@ -35,15 +35,15 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
   List<Object[]> revenueBySession();
 
   @Query("SELECT new com.cinema.web.dto.report.RevenuePeriodRow("
-      + "COALESCE(CAST(p.paymentMethod AS string),'ALL'), "
-      + "(p.promotion IS NOT NULL), "
+      + "CASE WHEN p.paymentMethod IS NULL THEN 'ALL' ELSE CAST(p.paymentMethod AS string) END, "
+      + "CASE WHEN p.promotion IS NOT NULL THEN true ELSE false END, "
       + "SUM(p.finalAmount)) "
       + "FROM Payment p "
       + "WHERE (:start IS NULL OR p.paymentDate >= :start) "
       + "AND (:end IS NULL OR p.paymentDate <= :end) "
       + "AND (:method IS NULL OR p.paymentMethod = :method) "
       + "AND (:promoOnly = false OR p.promotion IS NOT NULL) "
-      + "GROUP BY p.paymentMethod, (p.promotion IS NOT NULL)")
+      + "GROUP BY p.paymentMethod, CASE WHEN p.promotion IS NOT NULL THEN true ELSE false END")
   List<RevenuePeriodRow> revenueByPeriod(@Param("start") LocalDateTime start,
                                          @Param("end") LocalDateTime end,
                                          @Param("method") PaymentMethod method,
